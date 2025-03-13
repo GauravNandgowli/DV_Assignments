@@ -5,8 +5,10 @@ Sub ScheduleMeetingsInOutlook()
     Dim olApp As Object
     Dim olAppt As Object
     Dim userResponse As VbMsgBoxResult
+    Dim processedMeetings As Long
     
-    ' Disable error alerts
+    ' Disable screen updating and alerts
+    Application.ScreenUpdating = False
     Application.DisplayAlerts = False
     
     ' Set the worksheet
@@ -35,10 +37,18 @@ Sub ScheduleMeetingsInOutlook()
     End If
     On Error GoTo 0
     
+    ' Initialize meeting counter
+    processedMeetings = 0
+    
     ' Loop through each row and create meetings
     For i = 2 To lastRow ' Assuming the first row contains headers
         ' Reset error handling for each iteration
         On Error Resume Next
+        
+        ' Skip empty rows
+        If WorksheetFunction.CountA(ws.Rows(i)) = 0 Then
+            GoTo NextRow
+        End If
         
         ' Validate and convert essential columns
         Dim meetingDate As Date
@@ -48,28 +58,29 @@ Sub ScheduleMeetingsInOutlook()
         Dim requiredAttendees As String
         Dim optionalAttendees As String
         
-        ' Default to current date if invalid
-        If Not IsDate(ws.Cells(i, 1).Value) Then
-            meetingDate = Date
-        Else
+        ' Safely convert date
+        If IsDate(ws.Cells(i, 1).Value) Then
             meetingDate = CDate(ws.Cells(i, 1).Value)
+        Else
+            meetingDate = Date ' Default to current date
         End If
         
-        ' Default to midnight if invalid time
-        If Not IsDate(ws.Cells(i, 2).Value) Then
-            startTime = TimeValue("00:00")
-        Else
+        ' Safely convert start time
+        If IsDate(ws.Cells(i, 2).Value) Then
             startTime = TimeValue(ws.Cells(i, 2).Value)
-        End If
-        
-        If Not IsDate(ws.Cells(i, 3).Value) Then
-            endTime = TimeValue("23:59")
         Else
-            endTime = TimeValue(ws.Cells(i, 3).Value)
+            startTime = TimeValue("09:00") ' Default start time
         End If
         
-        ' Safely convert other fields
-        subject = CStr(IIf(IsEmpty(ws.Cells(i, 4).Value), "No Subject", ws.Cells(i, 4).Value))
+        ' Safely convert end time
+        If IsDate(ws.Cells(i, 3).Value) Then
+            endTime = TimeValue(ws.Cells(i, 3).Value)
+        Else
+            endTime = TimeValue("10:00") ' Default end time
+        End If
+        
+        ' Prepare other meeting details
+        subject = CStr(IIf(IsEmpty(ws.Cells(i, 4).Value), "Meeting", ws.Cells(i, 4).Value))
         requiredAttendees = CStr(IIf(IsEmpty(ws.Cells(i, 5).Value), "", ws.Cells(i, 5).Value))
         optionalAttendees = CStr(IIf(IsEmpty(ws.Cells(i, 6).Value), "", ws.Cells(i, 6).Value))
         
@@ -89,40 +100,47 @@ Sub ScheduleMeetingsInOutlook()
             .Subject = subject
             .RequiredAttendees = requiredAttendees
             .OptionalAttendees = optionalAttendees
-            .Body = "Please find the meeting details for " & subject
+            .Body = "Meeting details for: " & subject
             .ReminderMinutesBeforeStart = 15
             .ReminderSet = True
             
-            ' Display the meeting
+            ' Ensure the window is visible and on top
             .Display
+            .WindowState = 0 ' Normal window state
         End With
         
-        ' Wait for user interaction
-        userResponse = MsgBox("Have you finished processing this meeting invite?" & vbNewLine & _
-                               "Click Yes to proceed to the next meeting," & vbNewLine & _
-                               "Click No to keep this Outlook window open.", _
-                               vbYesNo + vbQuestion, "Proceed to Next Meeting")
+        ' Wait for user to process the meeting
+        userResponse = MsgBox("Process meeting: " & subject & vbNewLine & _
+                               "Click YES to proceed to next meeting," & vbNewLine & _
+                               "Click NO to keep this window open.", _
+                               vbYesNo + vbQuestion, "Meeting Processing")
         
-        ' Close Outlook window if user chooses to proceed
+        ' Close the appointment if user chooses to proceed
         If userResponse = vbYes Then
-            ' Close the current appointment window
-            If Not olAppt Is Nothing Then
-                olAppt.Close(0) ' 0 = olDiscard
-            End If
+            ' Attempt to close the appointment
+            On Error Resume Next
+            olAppt.Close(0) ' 0 = olDiscard
+            On Error GoTo 0
         End If
         
-        ' Clear any lingering errors
-        Err.Clear
+        ' Increment processed meetings counter
+        processedMeetings = processedMeetings + 1
         
         ' Clean up this iteration's objects
         Set olAppt = Nothing
+        
+NextRow:
+        ' Clear any lingering errors
+        Err.Clear
     Next i
     
-    ' Clean up
+    ' Clean up Outlook application
     Set olApp = Nothing
     
-    ' Restore error alerts
+    ' Restore screen updating and alerts
+    Application.ScreenUpdating = True
     Application.DisplayAlerts = True
     
-    MsgBox "Meeting scheduling process completed.", vbInformation
+    ' Show completion message
+    MsgBox "Processed " & processedMeetings & " meetings successfully.", vbInformation
 End Sub
