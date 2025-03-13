@@ -2,10 +2,13 @@ Sub ScheduleMeetingsInOutlook()
     Dim ws As Worksheet
     Dim lastRow As Long
     Dim i As Long
+    Dim startTime As Date
+    Dim endTime As Date
+    Dim subject As String
+    Dim requiredMembers As String
+    Dim optionalMembers As String
     Dim olApp As Object
     Dim olAppt As Object
-    Dim startDate As Date
-    Dim endDate As Date
     
     ' Set the worksheet
     On Error Resume Next
@@ -27,39 +30,39 @@ Sub ScheduleMeetingsInOutlook()
     lastRow = Application.WorksheetFunction.Max(lastRow, ws.Cells(ws.Rows.Count, "F").End(xlUp).Row)
     
     ' Initialize Outlook application
-    On Error Resume Next
-    Set olApp = GetObject(, "Outlook.Application")
-    If olApp Is Nothing Then
-        Set olApp = CreateObject("Outlook.Application")
-    End If
-    On Error GoTo 0
+    Dim olApp As Object
+    Set ol = CreateObject("Outlook.Application")
     
-    ' Loop through each row and create an Outlook meeting
+    ' Loop through each row and build the message
     For i = 2 To lastRow ' Assuming the first row contains headers
-        ' Check if at least one of the essential columns is not empty
+        ' Build the message only if at least one of the essential columns is not empty
         If Application.WorksheetFunction.CountA(ws.Rows(i).Columns("A:F")) > 0 Then
-            ' Validate and combine date and time for start and end
-            If IsDate(ws.Cells(i, 1).Value) And IsDate(ws.Cells(i, 2).Value) Then
-                startDate = CDate(ws.Cells(i, 1).Value) + TimeValue(ws.Cells(i, 2).Value)
+            ' Create a new appointment item
+            Set olAppointment = olApp.CreateItem(1) ' 1 = olAppointmentItem
+            
+            ' Determine the time format based on the cell's number format
+            Dim startTimeFormat As String
+            Dim endTimeFormat As String
+            
+            If InStr(1, ws.Cells(i, 2).NumberFormat, "AM/PM", vbTextCompare) > 0 Then
+                startTimeFormat = "h:mm AM/PM"
             Else
-                MsgBox "Invalid date or start time in row " & i, vbExclamation
-                GoTo NextIteration
+                startTimeFormat = "HH:mm"
             End If
             
-            If IsDate(ws.Cells(i, 1).Value) And IsDate(ws.Cells(i, 3).Value) Then
-                endDate = CDate(ws.Cells(i, 1).Value) + TimeValue(ws.Cells(i, 3).Value)
+            If InStr(1, ws.Cells(i, 3).NumberFormat, "AM/PM", vbTextCompare) > 0 Then
+                endTimeFormat = "h:mm AM/PM"
             Else
-                MsgBox "Invalid end time in row " & i, vbExclamation
-                GoTo NextIteration
+                endTimeFormat = "HH:mm"
             End If
             
             ' Create a new appointment item
-            Set olAppt = olApp.CreateItem(1) ' 1 = olAppointmentItem
+            Set olAppointment = olApp.CreateItem(1) ' 1 = olAppointmentItem
             
             ' Set the appointment details
-            With olAppt
-                .Start = startDate
-                .End = endDate
+            With olAppointment
+                .Start = ws.Cells(i, 1).Value + ws.Cells(i, 2).Value
+                .End = ws.Cells(i, 1).Value + ws.Cells(i, 3).Value
                 .Subject = ws.Cells(i, 4).Value
                 .RequiredAttendees = ws.Cells(i, 5).Value
                 .OptionalAttendees = ws.Cells(i, 6).Value
