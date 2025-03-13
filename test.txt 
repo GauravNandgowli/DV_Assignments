@@ -2,11 +2,6 @@ Sub ScheduleMeetingsInOutlook()
     Dim ws As Worksheet
     Dim lastRow As Long
     Dim i As Long
-    Dim msg As String
-    Dim startTime As Date
-    Dim endTime As Date
-    Dim startTimeFormat As String
-    Dim endTimeFormat As String
     Dim olApp As Object
     Dim olAppt As Object
     
@@ -21,13 +16,8 @@ Sub ScheduleMeetingsInOutlook()
         Exit Sub
     End If
     
-    ' Determine the last row with data in any of the specified columns
+    ' Determine the last row with data
     lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
-    lastRow = Application.WorksheetFunction.Max(lastRow, ws.Cells(ws.Rows.Count, "B").End(xlUp).Row)
-    lastRow = Application.WorksheetFunction.Max(lastRow, ws.Cells(ws.Rows.Count, "C").End(xlUp).Row)
-    lastRow = Application.WorksheetFunction.Max(lastRow, ws.Cells(ws.Rows.Count, "D").End(xlUp).Row)
-    lastRow = Application.WorksheetFunction.Max(lastRow, ws.Cells(ws.Rows.Count, "E").End(xlUp).Row)
-    lastRow = Application.WorksheetFunction.Max(lastRow, ws.Cells(ws.Rows.Count, "F").End(xlUp).Row)
     
     ' Initialize Outlook application
     On Error Resume Next
@@ -35,47 +25,50 @@ Sub ScheduleMeetingsInOutlook()
     If olApp Is Nothing Then
         Set olApp = CreateObject("Outlook.Application")
     End If
+    If olApp Is Nothing Then
+        MsgBox "Unable to start Outlook. Please ensure Outlook is installed.", vbCritical
+        Exit Sub
+    End If
     On Error GoTo 0
     
-    ' Loop through each row and build the message
+    ' Loop through each row and create meetings
     For i = 2 To lastRow ' Assuming the first row contains headers
-        ' Build the message only if at least one of the essential columns is not empty
-        If Application.WorksheetFunction.CountA(ws.Rows(i).Columns("A:F")) > 0 Then
+        ' Validate essential columns
+        If Not IsEmpty(ws.Cells(i, 1)) And Not IsEmpty(ws.Cells(i, 2)) And Not IsEmpty(ws.Cells(i, 3)) Then
             ' Create a new appointment item
             Set olAppt = olApp.CreateItem(1) ' 1 = olAppointmentItem
             
-            ' Determine the time format based on the cell's number format
-            Dim startTimeFormat As String
-            Dim endTimeFormat As String
-            
-            If InStr(1, ws.Cells(i, 2).NumberFormat, "AM/PM", vbTextCompare) > 0 Then
-                startTimeFormat = "h:mm AM/PM"
-            Else
-                startTimeFormat = "HH:mm"
-            End If
-            
-            If InStr(1, ws.Cells(i, 3).NumberFormat, "AM/PM", vbTextCompare) > 0 Then
-                endTimeFormat = "h:mm AM/PM"
-            Else
-                endTimeFormat = "HH:mm"
-            End If
-            
-            ' Create a new appointment item
-            Set olAppt = olApp.CreateItem(1) ' 1 = olAppointmentItem
-            
-            ' Set the appointment details
-            With olAppointment
-                .Start = ws.Cells(i, 1).Value + ws.Cells(i, 2).Value
-                .End = ws.Cells(i, 1).Value + ws.Cells(i, 3).Value
-                .Subject = ws.Cells(i, 4).Value
-                .RequiredAttendees = ws.Cells(i, 5).Value
-                .OptionalAttendees = ws.Cells(i, 6).Value
+            ' Error handling for date and time conversion
+            On Error Resume Next
+            With olAppt
+                ' Set meeting date and times
+                .Start = CDate(ws.Cells(i, 1).Value) + TimeValue(ws.Cells(i, 2).Value)
+                .End = CDate(ws.Cells(i, 1).Value) + TimeValue(ws.Cells(i, 3).Value)
+                
+                ' Set other meeting details
+                .Subject = CStr(ws.Cells(i, 4).Value)
+                .RequiredAttendees = CStr(ws.Cells(i, 5).Value)
+                .OptionalAttendees = CStr(ws.Cells(i, 6).Value)
                 .Body = "Please find the meeting details."
                 .ReminderMinutesBeforeStart = 15
                 .ReminderSet = True
-                .Display ' Display the meeting to allow manual sending
+                
+                ' Display the meeting for review
+                .Display
             End With
+            
+            ' Check for any errors during appointment creation
+            If Err.Number <> 0 Then
+                MsgBox "Error creating meeting in row " & i & ": " & Err.Description, vbExclamation
+                Err.Clear
+            End If
+            On Error GoTo 0
         End If
-NextIteration:
     Next i
+    
+    ' Clean up
+    Set olAppt = Nothing
+    Set olApp = Nothing
+    
+    MsgBox "Meeting scheduling process completed.", vbInformation
 End Sub
