@@ -5,6 +5,9 @@ Sub ScheduleMeetingsInOutlook()
     Dim olApp As Object
     Dim olAppt As Object
     
+    ' Disable error alerts
+    Application.DisplayAlerts = False
+    
     ' Set the worksheet
     On Error Resume Next
     Set ws = ThisWorkbook.Sheets("Sheet1") ' Change "Sheet1" to your sheet name
@@ -33,42 +36,91 @@ Sub ScheduleMeetingsInOutlook()
     
     ' Loop through each row and create meetings
     For i = 2 To lastRow ' Assuming the first row contains headers
-        ' Validate essential columns
-        If Not IsEmpty(ws.Cells(i, 1)) And Not IsEmpty(ws.Cells(i, 2)) And Not IsEmpty(ws.Cells(i, 3)) Then
-            ' Create a new appointment item
-            Set olAppt = olApp.CreateItem(1) ' 1 = olAppointmentItem
-            
-            ' Error handling for date and time conversion
-            On Error Resume Next
-            With olAppt
-                ' Set meeting date and times
-                .Start = CDate(ws.Cells(i, 1).Value) + TimeValue(ws.Cells(i, 2).Value)
-                .End = CDate(ws.Cells(i, 1).Value) + TimeValue(ws.Cells(i, 3).Value)
-                
-                ' Set other meeting details
-                .Subject = CStr(ws.Cells(i, 4).Value)
-                .RequiredAttendees = CStr(ws.Cells(i, 5).Value)
-                .OptionalAttendees = CStr(ws.Cells(i, 6).Value)
-                .Body = "Please find the meeting details."
-                .ReminderMinutesBeforeStart = 15
-                .ReminderSet = True
-                
-                ' Display the meeting for review
-                .Display
-            End With
-            
-            ' Check for any errors during appointment creation
-            If Err.Number <> 0 Then
-                MsgBox "Error creating meeting in row " & i & ": " & Err.Description, vbExclamation
-                Err.Clear
-            End If
-            On Error GoTo 0
+        ' Reset error handling for each iteration
+        On Error Resume Next
+        
+        ' Validate and convert essential columns
+        Dim meetingDate As Date
+        Dim startTime As Date
+        Dim endTime As Date
+        Dim subject As String
+        Dim requiredAttendees As String
+        Dim optionalAttendees As String
+        
+        ' Safely convert date
+        If IsDate(ws.Cells(i, 1).Value) Then
+            meetingDate = CDate(ws.Cells(i, 1).Value)
+        Else
+            ' Skip this row if date is invalid
+            Err.Clear
+            GoTo NextIteration
         End If
+        
+        ' Safely convert times
+        If IsDate(ws.Cells(i, 2).Value) Then
+            startTime = CDate(ws.Cells(i, 2).Value)
+        Else
+            ' Skip this row if start time is invalid
+            Err.Clear
+            GoTo NextIteration
+        End If
+        
+        If IsDate(ws.Cells(i, 3).Value) Then
+            endTime = CDate(ws.Cells(i, 3).Value)
+        Else
+            ' Skip this row if end time is invalid
+            Err.Clear
+            GoTo NextIteration
+        End If
+        
+        ' Safely convert other fields
+        subject = CStr(ws.Cells(i, 4).Value)
+        requiredAttendees = CStr(ws.Cells(i, 5).Value)
+        optionalAttendees = CStr(ws.Cells(i, 6).Value)
+        
+        ' Combine date and time
+        Dim fullStartTime As Date
+        Dim fullEndTime As Date
+        fullStartTime = meetingDate + TimeValue(startTime)
+        fullEndTime = meetingDate + TimeValue(endTime)
+        
+        ' Create a new appointment item
+        Set olAppt = olApp.CreateItem(1) ' 1 = olAppointmentItem
+        
+        ' Set meeting details
+        With olAppt
+            .Start = fullStartTime
+            .End = fullEndTime
+            .Subject = subject
+            .RequiredAttendees = requiredAttendees
+            .OptionalAttendees = optionalAttendees
+            .Body = "Please find the meeting details."
+            .ReminderMinutesBeforeStart = 15
+            .ReminderSet = True
+            
+            ' Display the meeting for review
+            .Display
+        End With
+        
+        ' Check for any errors
+        If Err.Number <> 0 Then
+            MsgBox "Error in row " & i & ": " & Err.Description, vbExclamation
+            Err.Clear
+        End If
+        
+NextIteration:
+        ' Clear any lingering errors
+        Err.Clear
+        
+        ' Clean up this iteration's objects
+        Set olAppt = Nothing
     Next i
     
     ' Clean up
-    Set olAppt = Nothing
     Set olApp = Nothing
+    
+    ' Restore error alerts
+    Application.DisplayAlerts = True
     
     MsgBox "Meeting scheduling process completed.", vbInformation
 End Sub
