@@ -1,10 +1,10 @@
-Sub DisplayDataInMsgBox()
+Sub ScheduleMeetingsInOutlook()
     Dim ws As Worksheet
     Dim lastRow As Long
     Dim i As Long
-    Dim msg As String
-    Dim startTimeFormat As String
-    Dim endTimeFormat As String
+    Dim olApp As Object
+    Dim olNamespace As Object
+    Dim olAppointment As Object
     
     ' Set the worksheet
     On Error Resume Next
@@ -25,32 +25,33 @@ Sub DisplayDataInMsgBox()
     lastRow = Application.WorksheetFunction.Max(lastRow, ws.Cells(ws.Rows.Count, "E").End(xlUp).Row)
     lastRow = Application.WorksheetFunction.Max(lastRow, ws.Cells(ws.Rows.Count, "F").End(xlUp).Row)
     
-    ' Loop through each row and build the message
+    ' Initialize Outlook application
+    On Error Resume Next
+    Set olApp = GetObject(, "Outlook.Application")
+    If olApp Is Nothing Then
+        Set olApp = CreateObject("Outlook.Application")
+    End If
+    On Error GoTo 0
+    
+    ' Loop through each row and create an Outlook meeting
     For i = 2 To lastRow ' Assuming the first row contains headers
-        ' Build the message only if at least one of the essential columns is not empty
+        ' Build the meeting only if at least one of the essential columns is not empty
         If Application.WorksheetFunction.CountA(ws.Rows(i)) > 0 Then
-            ' Determine the time format based on the cell's number format
-            If InStr(1, ws.Cells(i, 2).NumberFormat, "AM/PM", vbTextCompare) > 0 Then
-                startTimeFormat = "h:mm AM/PM"
-            Else
-                startTimeFormat = "HH:mm"
-            End If
+            ' Create a new appointment item
+            Set olAppointment = olApp.CreateItem(1) ' 1 = olAppointmentItem
             
-            If InStr(1, ws.Cells(i, 3).NumberFormat, "AM/PM", vbTextCompare) > 0 Then
-                endTimeFormat = "h:mm AM/PM"
-            Else
-                endTimeFormat = "HH:mm"
-            End If
-            
-            msg = "Date: " & ws.Cells(i, 1).Text & vbCrLf & _
-                  "Start Time: " & Format(ws.Cells(i, 2).Value, startTimeFormat) & vbCrLf & _
-                  "End Time: " & Format(ws.Cells(i, 3).Value, endTimeFormat) & vbCrLf & _
-                  "Subject: " & ws.Cells(i, 4).Value & vbCrLf & _
-                  "Required Members: " & ws.Cells(i, 5).Value & vbCrLf & _
-                  "Optional Members: " & ws.Cells(i, 6).Value
-            
-            ' Display the message box
-            MsgBox msg, vbInformation, "Event Details"
+            ' Set the appointment details
+            With olAppointment
+                .Start = ws.Cells(i, 1).Value + ws.Cells(i, 2).Value
+                .End = ws.Cells(i, 1).Value + ws.Cells(i, 3).Value
+                .Subject = ws.Cells(i, 4).Value
+                .RequiredAttendees = ws.Cells(i, 5).Value
+                .OptionalAttendees = ws.Cells(i, 6).Value
+                .Body = "Please find the meeting details."
+                .ReminderMinutesBeforeStart = 15
+                .ReminderSet = True
+                .Display ' Display the meeting to allow manual sending
+            End With
         End If
     Next i
 End Sub
