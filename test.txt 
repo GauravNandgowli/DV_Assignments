@@ -103,11 +103,10 @@ Sub ScheduleMeetingsInOutlook()
             .Body = "Meeting details for: " & subject
             .ReminderMinutesBeforeStart = 15
             .ReminderSet = True
-            
-            ' Ensure the window is visible and on top
-            .Display
-            .WindowState = 0 ' Normal window state
         End With
+        
+        ' Display the appointment
+        olAppt.Display
         
         ' Wait for user to process the meeting
         userResponse = MsgBox("Process meeting: " & subject & vbNewLine & _
@@ -128,6 +127,9 @@ Sub ScheduleMeetingsInOutlook()
         
         ' Clean up this iteration's objects
         Set olAppt = Nothing
+        
+        ' Add a small delay to ensure Outlook can process the window
+        Application.Wait Now + TimeValue("00:00:01")
         
 NextRow:
         ' Clear any lingering errors
