@@ -2,9 +2,13 @@ Sub ScheduleMeetingsInOutlook()
     Dim ws As Worksheet
     Dim lastRow As Long
     Dim i As Long
+    Dim msg As String
+    Dim startTime As Date
+    Dim endTime As Date
+    Dim startTimeFormat As String
+    Dim endTimeFormat As String
     Dim olApp As Object
-    Dim olNamespace As Object
-    Dim olAppointment As Object
+    Dim olAppt As Object
     
     ' Set the worksheet
     On Error Resume Next
@@ -27,31 +31,52 @@ Sub ScheduleMeetingsInOutlook()
     
     ' Initialize Outlook application
     On Error Resume Next
-    Set olApp = GetObject(, "Outlook.Application")
-    If olApp Is Nothing Then
-        Set olApp = CreateObject("Outlook.Application")
-    End If
+    Set ws = ThisWorkbook.Sheets("Sheet1") ' Change "Sheet1" to your sheet name
     On Error GoTo 0
     
-    ' Loop through each row and create an Outlook meeting
+    ' Check if the worksheet is set
+    If ws Is Nothing Then
+        MsgBox "Worksheet not found. Please check the sheet name.", vbCritical
+        Exit Sub
+    End If
+    
+    Dim olApp As Object
+    Dim olAppt As Object
+    Set olApp = CreateObject("Outlook.Application")
+    
+    ' Loop through each row and build the message
     For i = 2 To lastRow ' Assuming the first row contains headers
-        ' Build the meeting only if at least one of the essential columns is not empty
-        If Application.WorksheetFunction.CountA(ws.Rows(i)) > 0 Then
-            ' Create a new appointment item
-            Set olAppointment = olApp.CreateItem(1) ' 1 = olAppointmentItem
+        ' Check if at least one of the essential columns is not empty
+        If Application.WorksheetFunction.CountA(ws.Rows(i).Columns("A:F")) > 0 Then
+            ' Combine date and time for start and end
+            Dim startDate As Date
+            Dim endDate As Date
             
-            ' Set the appointment details
-            With olAppointment
-                .Start = ws.Cells(i, 1).Value + ws.Cells(i, 2).Value
-                .End = ws.Cells(i, 1).Value + ws.Cells(i, 3).Value
-                .Subject = ws.Cells(i, 4).Value
-                .RequiredAttendees = ws.Cells(i, 5).Value
-                .OptionalAttendees = ws.Cells(i, 6).Value
-                .Body = "Please find the meeting details."
-                .ReminderMinutesBeforeStart = 15
-                .ReminderSet = True
-                .Display ' Display the meeting to allow manual sending
-            End With
+            If IsDate(ws.Cells(i, 1).Value) And IsDate(ws.Cells(i, 2).Value) Then
+                startDate = ws.Cells(i, 1).Value + ws.Cells(i, 2).Value
+            Else
+                MsgBox "Invalid date or start time in row " & i, vbExclamation
+                GoTo NextIteration
+            End If
+            
+            If IsDate(ws.Cells(i, 3).Value) Then
+                endDate = ws.Cells(i, 1).Value + ws.Cells(i, 3).Value
+            Else
+                MsgBox "Invalid end time in row " & i, vbExclamation
+                GoTo NextIteration
+            End If
+            
+            ' Build the message
+            msg = "Date: " & ws.Cells(i, 1).Text & vbCrLf & _
+                  "Start Time: " & Format(startDate, "h:mm AM/PM") & vbCrLf & _
+                  "End Time: " & Format(endDate, "h:mm AM/PM") & vbCrLf & _
+                  "Subject: " & ws.Cells(i, 4).Value & vbCrLf & _
+                  "Required Members: " & ws.Cells(i, 5).Value & vbCrLf & _
+                  "Optional Members: " & ws.Cells(i, 6).Value
+            
+            ' Display the message box
+            MsgBox msg, vbInformation, "Event Details"
         End If
+NextIteration:
     Next i
 End Sub
