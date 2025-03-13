@@ -3,6 +3,8 @@ Sub DisplayDataInMsgBox()
     Dim lastRow As Long
     Dim i As Long
     Dim msg As String
+    Dim startTimeFormat As String
+    Dim endTimeFormat As String
     
     ' Set the worksheet
     On Error Resume Next
@@ -27,9 +29,22 @@ Sub DisplayDataInMsgBox()
     For i = 2 To lastRow ' Assuming the first row contains headers
         ' Build the message only if at least one of the essential columns is not empty
         If Application.WorksheetFunction.CountA(ws.Rows(i)) > 0 Then
-            msg = "Date: " & ws.Cells(i, 1).Value & vbCrLf & _
-                  "Start Time: " & ws.Cells(i, 2).Value & vbCrLf & _
-                  "End Time: " & ws.Cells(i, 3).Value & vbCrLf & _
+            ' Determine the time format based on the cell's number format
+            If InStr(1, ws.Cells(i, 2).NumberFormat, "AM/PM", vbTextCompare) > 0 Then
+                startTimeFormat = "h:mm AM/PM"
+            Else
+                startTimeFormat = "HH:mm"
+            End If
+            
+            If InStr(1, ws.Cells(i, 3).NumberFormat, "AM/PM", vbTextCompare) > 0 Then
+                endTimeFormat = "h:mm AM/PM"
+            Else
+                endTimeFormat = "HH:mm"
+            End If
+            
+            msg = "Date: " & ws.Cells(i, 1).Text & vbCrLf & _
+                  "Start Time: " & Format(ws.Cells(i, 2).Value, startTimeFormat) & vbCrLf & _
+                  "End Time: " & Format(ws.Cells(i, 3).Value, endTimeFormat) & vbCrLf & _
                   "Subject: " & ws.Cells(i, 4).Value & vbCrLf & _
                   "Required Members: " & ws.Cells(i, 5).Value & vbCrLf & _
                   "Optional Members: " & ws.Cells(i, 6).Value
