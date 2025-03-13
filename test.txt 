@@ -4,25 +4,17 @@ Sub ScheduleMeetingsInOutlook()
     Dim i As Long
     Dim olApp As Object
     Dim olAppt As Object
-    
+
     ' Disable screen updating and alerts
     Application.ScreenUpdating = False
     Application.DisplayAlerts = False
-    
+
     ' Set the worksheet
-    On Error Resume Next
-    Set ws = ThisWorkbook.Sheets("Sheet1") ' Change "Sheet1" to your sheet name
-    On Error GoTo 0
-    
-    ' Check if the worksheet is set
-    If ws Is Nothing Then
-        MsgBox "Worksheet not found. Please check the sheet name.", vbCritical
-        Exit Sub
-    End If
-    
+    Set ws = ThisWorkbook.Sheets("Sheet1") ' Change to your sheet name
+
     ' Determine the last row with data
     lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
-    
+
     ' Initialize Outlook application
     On Error Resume Next
     Set olApp = GetObject(Class:="Outlook.Application")
@@ -34,17 +26,17 @@ Sub ScheduleMeetingsInOutlook()
         Exit Sub
     End If
     On Error GoTo 0
-    
+
     ' Loop through each row and create meetings
     For i = 2 To lastRow ' Assuming the first row contains headers
         ' Reset error handling for each iteration
         On Error Resume Next
-        
+
         ' Skip empty rows
         If WorksheetFunction.CountA(ws.Rows(i)) = 0 Then
             GoTo NextRow
         End If
-        
+
         ' Validate and convert essential columns
         Dim meetingDate As Date
         Dim startTime As Date
@@ -53,43 +45,43 @@ Sub ScheduleMeetingsInOutlook()
         Dim requiredAttendees As String
         Dim optionalAttendees As String
         Dim location As String
-        
+
         ' Safely convert date
         If IsDate(ws.Cells(i, 1).Value) Then
             meetingDate = CDate(ws.Cells(i, 1).Value)
         Else
             meetingDate = Date ' Default to current date
         End If
-        
+
         ' Safely convert start time
         If IsDate(ws.Cells(i, 2).Value) Then
             startTime = TimeValue(ws.Cells(i, 2).Value)
         Else
             startTime = TimeValue("09:00") ' Default start time
         End If
-        
+
         ' Safely convert end time
         If IsDate(ws.Cells(i, 3).Value) Then
             endTime = TimeValue(ws.Cells(i, 3).Value)
         Else
             endTime = TimeValue("10:00") ' Default end time
         End If
-        
+
         ' Prepare other meeting details
         subject = CStr(IIf(IsEmpty(ws.Cells(i, 4).Value), "Meeting", ws.Cells(i, 4).Value))
         requiredAttendees = CStr(IIf(IsEmpty(ws.Cells(i, 5).Value), "", ws.Cells(i, 5).Value))
         optionalAttendees = CStr(IIf(IsEmpty(ws.Cells(i, 6).Value), "", ws.Cells(i, 6).Value))
         location = CStr(IIf(IsEmpty(ws.Cells(i, 7).Value), "", ws.Cells(i, 7).Value))
-        
+
         ' Combine date and time
         Dim fullStartTime As Date
         Dim fullEndTime As Date
         fullStartTime = meetingDate + startTime
         fullEndTime = meetingDate + endTime
-        
+
         ' Create a new appointment item
         Set olAppt = olApp.CreateItem(1) ' 1 = olAppointmentItem
-        
+
         ' Set meeting details
         With olAppt
             .Start = fullStartTime
@@ -102,44 +94,49 @@ Sub ScheduleMeetingsInOutlook()
                     "Location: " & location
             .ReminderMinutesBeforeStart = 15
             .ReminderSet = True
+            
+            ' Display the appointment for review
+            .Display
         End With
-        
-        ' Save the appointment
-        olAppt.Save
-        
-        ' Prompt user for confirmation
+
+        ' Wait for user interaction
         Dim userResponse As VbMsgBoxResult
-        userResponse = MsgBox("Meeting created:" & vbNewLine & _
-                              "Subject: " & subject & vbNewLine & _
-                              "Date: " & Format(meetingDate, "mm/dd/yyyy") & vbNewLine & _
-                              "Time: " & Format(startTime, "hh:mm AM/PM") & " - " & Format(endTime, "hh:mm AM/PM") & vbNewLine & _
-                              "Attendees: " & requiredAttendees & vbNewLine & _
-                              vbNewLine & "Do you want to continue?", _
+        userResponse = MsgBox("Review the appointment details. Do you want to save this meeting?", _
                               vbYesNo + vbQuestion, "Confirm Meeting")
+
+        ' Save or discard based on user response
+        If userResponse = vbYes Then
+            olAppt.Save
+        Else
+            olAppt.Close(1) ' 1 = olDiscard
+        End If
+
+        ' Close the appointment window
+        olAppt.Close(0)
+
+        ' Check if user wants to continue
+        userResponse = MsgBox("Do you want to continue scheduling meetings?", _
+                              vbYesNo + vbQuestion, "Continue")
         
-        ' Close the appointment
-        olAppt.Close(0) ' 0 = olDiscard
-        
-        ' Check user response
         If userResponse = vbNo Then
             Exit For
         End If
-        
+
 NextRow:
         ' Clear any lingering errors
         Err.Clear
-        
+
         ' Small pause between iterations
         Application.Wait Now + TimeValue("00:00:01")
     Next i
-    
+
     ' Clean up Outlook application
     Set olApp = Nothing
-    
+
     ' Restore screen updating and alerts
     Application.ScreenUpdating = True
     Application.DisplayAlerts = True
-    
+
     ' Show completion message
     MsgBox "Meeting scheduling process completed.", vbInformation
 End Sub
