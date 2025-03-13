@@ -15,18 +15,17 @@ Sub DisplayDataInMsgBox()
         Exit Sub
     End If
     
-    ' Check if there is data in column A
-    If Application.WorksheetFunction.CountA(ws.Columns("A")) = 0 Then
-        MsgBox "No data found in column A.", vbExclamation
-        Exit Sub
-    End If
-    
-    ' Find the last row with data in column A (Date column)
+    ' Determine the last row with data in any of the specified columns
     lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+    lastRow = Application.WorksheetFunction.Max(lastRow, ws.Cells(ws.Rows.Count, "B").End(xlUp).Row)
+    lastRow = Application.WorksheetFunction.Max(lastRow, ws.Cells(ws.Rows.Count, "C").End(xlUp).Row)
+    lastRow = Application.WorksheetFunction.Max(lastRow, ws.Cells(ws.Rows.Count, "D").End(xlUp).Row)
+    lastRow = Application.WorksheetFunction.Max(lastRow, ws.Cells(ws.Rows.Count, "E").End(xlUp).Row)
+    lastRow = Application.WorksheetFunction.Max(lastRow, ws.Cells(ws.Rows.Count, "F").End(xlUp).Row)
     
     ' Loop through each row and build the message
     For i = 2 To lastRow ' Assuming the first row contains headers
-        ' Check if the row is not empty
+        ' Build the message only if at least one of the essential columns is not empty
         If Application.WorksheetFunction.CountA(ws.Rows(i)) > 0 Then
             msg = "Date: " & ws.Cells(i, 1).Value & vbCrLf & _
                   "Start Time: " & ws.Cells(i, 2).Value & vbCrLf & _
@@ -35,10 +34,8 @@ Sub DisplayDataInMsgBox()
                   "Required Members: " & ws.Cells(i, 5).Value & vbCrLf & _
                   "Optional Members: " & ws.Cells(i, 6).Value
             
-            ' Display the message box only if msg is not empty
-            If Trim(msg) <> "" Then
-                MsgBox msg, vbInformation, "Event Details"
-            End If
+            ' Display the message box
+            MsgBox msg, vbInformation, "Event Details"
         End If
     Next i
 End Sub
