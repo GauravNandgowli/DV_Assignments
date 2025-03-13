@@ -5,10 +5,6 @@ Sub ScheduleMeetingsInOutlook()
     Dim olApp As Object
     Dim olAppt As Object
     
-    ' Disable screen updating and alerts
-    Application.ScreenUpdating = False
-    Application.DisplayAlerts = False
-    
     ' Set the worksheet
     On Error Resume Next
     Set ws = ThisWorkbook.Sheets("Sheet1") ' Change "Sheet1" to your sheet name
@@ -37,109 +33,42 @@ Sub ScheduleMeetingsInOutlook()
     
     ' Loop through each row and create meetings
     For i = 2 To lastRow ' Assuming the first row contains headers
-        ' Reset error handling for each iteration
-        On Error Resume Next
-        
-        ' Skip empty rows
-        If WorksheetFunction.CountA(ws.Rows(i)) = 0 Then
-            GoTo NextRow
+        ' Validate essential columns
+        If Not IsEmpty(ws.Cells(i, 1)) And Not IsEmpty(ws.Cells(i, 2)) And Not IsEmpty(ws.Cells(i, 3)) Then
+            ' Create a new appointment item
+            Set olAppt = olApp.CreateItem(1) ' 1 = olAppointmentItem
+            
+            ' Error handling for date and time conversion
+            On Error Resume Next
+            With olAppt
+                ' Set meeting date and times
+                .Start = CDate(ws.Cells(i, 1).Value) + TimeValue(ws.Cells(i, 2).Value)
+                .End = CDate(ws.Cells(i, 1).Value) + TimeValue(ws.Cells(i, 3).Value)
+                
+                ' Set other meeting details
+                .Subject = CStr(ws.Cells(i, 4).Value)
+                .RequiredAttendees = CStr(ws.Cells(i, 5).Value)
+                .OptionalAttendees = CStr(ws.Cells(i, 6).Value)
+                .Body = "Please find the meeting details."
+                .ReminderMinutesBeforeStart = 15
+                .ReminderSet = True
+                
+                ' Display the meeting for review
+                .Display
+            End With
+            
+            ' Check for any errors during appointment creation
+            If Err.Number <> 0 Then
+                MsgBox "Error creating meeting in row " & i & ": " & Err.Description, vbExclamation
+                Err.Clear
+            End If
+            On Error GoTo 0
         End If
-        
-        ' Validate and convert essential columns
-        Dim meetingDate As Date
-        Dim startTime As Date
-        Dim endTime As Date
-        Dim subject As String
-        Dim requiredAttendees As String
-        Dim optionalAttendees As String
-        Dim location As String
-        
-        ' Safely convert date
-        If IsDate(ws.Cells(i, 1).Value) Then
-            meetingDate = CDate(ws.Cells(i, 1).Value)
-        Else
-            meetingDate = Date ' Default to current date
-        End If
-        
-        ' Safely convert start time
-        If IsDate(ws.Cells(i, 2).Value) Then
-            startTime = TimeValue(ws.Cells(i, 2).Value)
-        Else
-            startTime = TimeValue("09:00") ' Default start time
-        End If
-        
-        ' Safely convert end time
-        If IsDate(ws.Cells(i, 3).Value) Then
-            endTime = TimeValue(ws.Cells(i, 3).Value)
-        Else
-            endTime = TimeValue("10:00") ' Default end time
-        End If
-        
-        ' Prepare other meeting details
-        subject = CStr(IIf(IsEmpty(ws.Cells(i, 4).Value), "Meeting", ws.Cells(i, 4).Value))
-        requiredAttendees = CStr(IIf(IsEmpty(ws.Cells(i, 5).Value), "", ws.Cells(i, 5).Value))
-        optionalAttendees = CStr(IIf(IsEmpty(ws.Cells(i, 6).Value), "", ws.Cells(i, 6).Value))
-        location = CStr(IIf(IsEmpty(ws.Cells(i, 7).Value), "", ws.Cells(i, 7).Value))
-        
-        ' Combine date and time
-        Dim fullStartTime As Date
-        Dim fullEndTime As Date
-        fullStartTime = meetingDate + startTime
-        fullEndTime = meetingDate + endTime
-        
-        ' Create a new appointment item
-        Set olAppt = olApp.CreateItem(1) ' 1 = olAppointmentItem
-        
-        ' Set meeting details
-        With olAppt
-            .Start = fullStartTime
-            .End = fullEndTime
-            .Subject = subject
-            .RequiredAttendees = requiredAttendees
-            .OptionalAttendees = optionalAttendees
-            .Location = location
-            .Body = "Meeting details for: " & subject & vbNewLine & _
-                    "Location: " & location
-            .ReminderMinutesBeforeStart = 15
-            .ReminderSet = True
-        End With
-        
-        ' Save the appointment
-        olAppt.Save
-        
-        ' Prompt user for confirmation
-        Dim userResponse As VbMsgBoxResult
-        userResponse = MsgBox("Meeting created:" & vbNewLine & _
-                              "Subject: " & subject & vbNewLine & _
-                              "Date: " & Format(meetingDate, "mm/dd/yyyy") & vbNewLine & _
-                              "Time: " & Format(startTime, "hh:mm AM/PM") & " - " & Format(endTime, "hh:mm AM/PM") & vbNewLine & _
-                              "Attendees: " & requiredAttendees & vbNewLine & _
-                              vbNewLine & "Do you want to continue?", _
-                              vbYesNo + vbQuestion, "Confirm Meeting")
-        
-        ' Close the appointment
-        olAppt.Close(0) ' 0 = olDiscard
-        
-        ' Check user response
-        If userResponse = vbNo Then
-            Exit For
-        End If
-        
-NextRow:
-        ' Clear any lingering errors
-        Err.Clear
-        
-        ' Small pause between iterations
-        Application.Wait Now + TimeValue("00:00:01")
     Next i
     
-    ' Clean up Outlook application
+    ' Clean up
+    Set olAppt = Nothing
     Set olApp = Nothing
     
-    ' Restore screen updating and alerts
-    Application.ScreenUpdating = True
-    Application.DisplayAlerts = True
-    
-    ' Show completion message
     MsgBox "Meeting scheduling process completed.", vbInformation
 End Sub
