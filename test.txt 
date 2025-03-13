@@ -2,11 +2,11 @@ Sub ScheduleMeetingsInOutlook()
     Dim ws As Worksheet
     Dim lastRow As Long
     Dim i As Long
+    Dim msg As String
     Dim startTime As Date
     Dim endTime As Date
-    Dim subject As String
-    Dim requiredMembers As String
-    Dim optionalMembers As String
+    Dim startTimeFormat As String
+    Dim endTimeFormat As String
     Dim olApp As Object
     Dim olAppt As Object
     
@@ -30,15 +30,19 @@ Sub ScheduleMeetingsInOutlook()
     lastRow = Application.WorksheetFunction.Max(lastRow, ws.Cells(ws.Rows.Count, "F").End(xlUp).Row)
     
     ' Initialize Outlook application
-    Dim olApp As Object
-    Set ol = CreateObject("Outlook.Application")
+    On Error Resume Next
+    Set olApp = GetObject(Class:="Outlook.Application")
+    If olApp Is Nothing Then
+        Set olApp = CreateObject("Outlook.Application")
+    End If
+    On Error GoTo 0
     
     ' Loop through each row and build the message
     For i = 2 To lastRow ' Assuming the first row contains headers
         ' Build the message only if at least one of the essential columns is not empty
         If Application.WorksheetFunction.CountA(ws.Rows(i).Columns("A:F")) > 0 Then
             ' Create a new appointment item
-            Set olAppointment = olApp.CreateItem(1) ' 1 = olAppointmentItem
+            Set olAppt = olApp.CreateItem(1) ' 1 = olAppointmentItem
             
             ' Determine the time format based on the cell's number format
             Dim startTimeFormat As String
@@ -57,7 +61,7 @@ Sub ScheduleMeetingsInOutlook()
             End If
             
             ' Create a new appointment item
-            Set olAppointment = olApp.CreateItem(1) ' 1 = olAppointmentItem
+            Set olAppt = olApp.CreateItem(1) ' 1 = olAppointmentItem
             
             ' Set the appointment details
             With olAppointment
