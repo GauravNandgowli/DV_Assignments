@@ -1,15 +1,11 @@
-Option Explicit
-
 Sub CreateMeetingsFromExcel()
     Dim xlApp As Object
     Dim xlWorkbook As Object
     Dim xlWorksheet As Object
-    Dim outlookApp As Outlook.Application
-    Dim meetingItem As Outlook.MeetingItem
+    Dim outlookApp As Object
+    Dim meetingItem As Object
     Dim lastRow As Long
     Dim i As Long
-    Dim reqRecipient As Outlook.Recipient
-    Dim optRecipient As Outlook.Recipient
     
     ' Error handling
     On Error GoTo ErrorHandler
@@ -23,7 +19,7 @@ Sub CreateMeetingsFromExcel()
     lastRow = xlWorksheet.Cells(xlWorksheet.Rows.Count, "A").End(xlUp).Row
     
     ' Create Outlook Application
-    Set outlookApp = New Outlook.Application
+    Set outlookApp = CreateObject("Outlook.Application")
     
     ' Loop through rows and create meetings
     For i = 2 To lastRow ' Assuming row 1 is headers
@@ -62,6 +58,7 @@ Sub CreateMeetingsFromExcel()
                 reqParts = Split(requiredParticipants, ";")
                 Dim j As Long
                 For j = LBound(reqParts) To UBound(reqParts)
+                    Dim reqRecipient As Outlook.Recipient
                     Set reqRecipient = .Recipients.Add(Trim(reqParts(j)))
                     reqRecipient.Type = olRequired
                 Next j
@@ -76,6 +73,7 @@ Sub CreateMeetingsFromExcel()
                 optParts = Split(optionalParticipants, ";")
                 Dim k As Long
                 For k = LBound(optParts) To UBound(optParts)
+                    Dim optRecipient As Outlook.Recipient
                     Set optRecipient = .Recipients.Add(Trim(optParts(k)))
                     optRecipient.Type = olOptional
                 Next k
@@ -102,10 +100,86 @@ Sub CreateMeetingsFromExcel()
     
 ErrorHandler:
     MsgBox "Error creating meetings: " & Err.Description, vbCritical
-    
-    ' Additional error handling
-    If Not meetingItem Is Nothing Then Set meetingItem = Nothing
-    If Not outlookApp Is Nothing Then Set outlookApp = Nothing
 End Sub
 
-' [Rest of the previous script remains the same]
+' Function to parse flexible date formats
+Function ParseFlexibleDate(dateString As String) As Date
+    Dim possibleFormats() As Variant
+    Dim i As Long
+    
+    ' Array of possible date formats
+    possibleFormats = Array( _
+        "dd/mm/yyyy", "dd/m/yyyy", "d/m/yyyy", _
+        "dd/mm/yy", "dd/m/yy", "d/m/yy", _
+        "mm/dd/yyyy", "mm/d/yyyy", "m/d/yyyy", _
+        "mm/dd/yy", "mm/d/yy", "m/d/yy" _
+    )
+    
+    ' Try parsing with different formats
+    For i = LBound(possibleFormats) To UBound(possibleFormats)
+        On Error Resume Next
+        ParseFlexibleDate = DateValue(Replace(dateString, "/", DateSeparator(possibleFormats(i))))
+        If Err.Number = 0 Then Exit Function
+        On Error GoTo 0
+    Next i
+    
+    ' If no format works, raise an error
+    Err.Raise 1001, "ParseFlexibleDate", "Unable to parse date: " & dateString
+End Function
+
+' Function to parse flexible time formats
+Function ParseFlexibleTime(timeString As String) As Date
+    Dim cleanTime As String
+    Dim amPmIndicator As String
+    Dim is24HourFormat As Boolean
+    
+    ' Remove any spaces and convert to uppercase
+    cleanTime = UCase(Replace(timeString, " ", ""))
+    
+    ' Determine AM/PM or 24-hour format
+    If InStr(cleanTime, "AM") > 0 Or InStr(cleanTime, "PM") > 0 Then
+        is24HourFormat = False
+        amPmIndicator = Right(cleanTime, 2)
+        cleanTime = Left(cleanTime, Len(cleanTime) - 2)
+    Else
+        is24HourFormat = True
+    End If
+    
+    ' Handle different time separators
+    If InStr(cleanTime, ":") = 0 Then
+        ' Insert colon for times like 930 or 1430
+        If Len(cleanTime) = 3 Then
+            cleanTime = Left(cleanTime, 1) & ":" & Right(cleanTime, 2)
+        ElseIf Len(cleanTime) = 4 Then
+            cleanTime = Left(cleanTime, 2) & ":" & Right(cleanTime, 2)
+        End If
+    End If
+    
+    ' Convert to 24-hour format if needed
+    If Not is24HourFormat Then
+        Dim hours As Integer
+        hours = CInt(Left(cleanTime, InStr(cleanTime, ":") - 1))
+        
+        If amPmIndicator = "PM" And hours < 12 Then
+            hours = hours + 12
+        ElseIf amPmIndicator = "AM" And hours = 12 Then
+            hours = 0
+        End If
+        
+        cleanTime = Format(hours, "00") & Mid(cleanTime, InStr(cleanTime, ":"))
+    End If
+    
+    ' Return as time value
+    ParseFlexibleTime = TimeValue(cleanTime)
+End Function
+
+' Helper function to get date separator based on format
+Function DateSeparator(formatString As String) As String
+    If InStr(formatString, "/") > 0 Then
+        DateSeparator = "/"
+    ElseIf InStr(formatString, "-") > 0 Then
+        DateSeparator = "-"
+    Else
+        DateSeparator = "/"
+    End If
+End Function
