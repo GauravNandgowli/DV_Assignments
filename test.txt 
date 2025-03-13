@@ -1,29 +1,39 @@
-Sub DisplayMeetingData()
-
-  Dim lastRow As Long
-  Dim i As Long
-  Dim msg As String
-  Dim ws As Worksheet
-
-  ' Set the worksheet where the data is located
-  Set ws = ThisWorkbook.Sheets("Sheet1") ' Change "Sheet1" to your sheet name
-
-  ' Find the last row with data
-  lastRow = ws.Cells(Rows.Count, 1).End(xlUp).Row
-
-  ' Loop through each row and build the message string
-  For i = 2 To lastRow ' Assuming headers in row 1
-    msg = msg & "Meeting " & i - 1 & vbCrLf
-    msg = msg & "Date: " & ws.Cells(i, 1).Value & vbCrLf
-    msg = msg & "Start Time: " & ws.Cells(i, 2).Value & vbCrLf
-    msg = msg & "End Time: " & ws.Cells(i, 3).Value & vbCrLf
-    msg = msg & "Subject: " & ws.Cells(i, 4).Value & vbCrLf
-    msg = msg & "Required Members: " & ws.Cells(i, 5).Value & vbCrLf
-    msg = msg & "Optional Members: " & ws.Cells(i, 6).Value & vbCrLf
-    msg = msg & vbCrLf ' Add an extra line break between meetings
-  Next i
-
-  ' Display the message box
-  MsgBox msg, vbInformation, "Meeting Data"
-
+Sub DisplayDataInMsgBox()
+    Dim ws As Worksheet
+    Dim lastRow As Long
+    Dim i As Long
+    Dim msg As String
+    
+    ' Set the worksheet
+    On Error Resume Next
+    Set ws = ThisWorkbook.Sheets("Sheet1") ' Change "Sheet1" to your sheet name
+    On Error GoTo 0
+    
+    ' Check if the worksheet is set
+    If ws Is Nothing Then
+        MsgBox "Worksheet not found. Please check the sheet name.", vbCritical
+        Exit Sub
+    End If
+    
+    ' Check if there is data in column A
+    If Application.WorksheetFunction.CountA(ws.Columns("A")) = 0 Then
+        MsgBox "No data found in column A.", vbExclamation
+        Exit Sub
+    End If
+    
+    ' Find the last row with data in column A (Date column)
+    lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+    
+    ' Loop through each row and build the message
+    For i = 2 To lastRow ' Assuming the first row contains headers
+        msg = "Date: " & ws.Cells(i, 1).Value & vbCrLf & _
+              "Start Time: " & ws.Cells(i, 2).Value & vbCrLf & _
+              "End Time: " & ws.Cells(i, 3).Value & vbCrLf & _
+              "Subject: " & ws.Cells(i, 4).Value & vbCrLf & _
+              "Required Members: " & ws.Cells(i, 5).Value & vbCrLf & _
+              "Optional Members: " & ws.Cells(i, 6).Value
+        
+        ' Display the message box
+        MsgBox msg, vbInformation, "Event Details"
+    Next i
 End Sub
