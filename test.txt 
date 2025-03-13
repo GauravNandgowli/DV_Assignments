@@ -4,8 +4,6 @@ Sub ScheduleMeetingsInOutlook()
     Dim i As Long
     Dim olApp As Object
     Dim olAppt As Object
-    Dim userResponse As VbMsgBoxResult
-    Dim processedMeetings As Long
     
     ' Disable screen updating and alerts
     Application.ScreenUpdating = False
@@ -37,9 +35,6 @@ Sub ScheduleMeetingsInOutlook()
     End If
     On Error GoTo 0
     
-    ' Initialize meeting counter
-    processedMeetings = 0
-    
     ' Loop through each row and create meetings
     For i = 2 To lastRow ' Assuming the first row contains headers
         ' Reset error handling for each iteration
@@ -57,6 +52,7 @@ Sub ScheduleMeetingsInOutlook()
         Dim subject As String
         Dim requiredAttendees As String
         Dim optionalAttendees As String
+        Dim location As String
         
         ' Safely convert date
         If IsDate(ws.Cells(i, 1).Value) Then
@@ -83,6 +79,7 @@ Sub ScheduleMeetingsInOutlook()
         subject = CStr(IIf(IsEmpty(ws.Cells(i, 4).Value), "Meeting", ws.Cells(i, 4).Value))
         requiredAttendees = CStr(IIf(IsEmpty(ws.Cells(i, 5).Value), "", ws.Cells(i, 5).Value))
         optionalAttendees = CStr(IIf(IsEmpty(ws.Cells(i, 6).Value), "", ws.Cells(i, 6).Value))
+        location = CStr(IIf(IsEmpty(ws.Cells(i, 7).Value), "", ws.Cells(i, 7).Value))
         
         ' Combine date and time
         Dim fullStartTime As Date
@@ -100,46 +97,40 @@ Sub ScheduleMeetingsInOutlook()
             .Subject = subject
             .RequiredAttendees = requiredAttendees
             .OptionalAttendees = optionalAttendees
-            .Body = "Meeting details for: " & subject
+            .Location = location
+            .Body = "Meeting details for: " & subject & vbNewLine & _
+                    "Location: " & location
             .ReminderMinutesBeforeStart = 15
             .ReminderSet = True
         End With
         
-        ' Display the appointment
-        olAppt.Display
+        ' Save the appointment
+        olAppt.Save
         
-        ' Bring the Outlook window to the foreground
-        AppActivate "Microsoft Outlook"
+        ' Prompt user for confirmation
+        Dim userResponse As VbMsgBoxResult
+        userResponse = MsgBox("Meeting created:" & vbNewLine & _
+                              "Subject: " & subject & vbNewLine & _
+                              "Date: " & Format(meetingDate, "mm/dd/yyyy") & vbNewLine & _
+                              "Time: " & Format(startTime, "hh:mm AM/PM") & " - " & Format(endTime, "hh:mm AM/PM") & vbNewLine & _
+                              "Attendees: " & requiredAttendees & vbNewLine & _
+                              vbNewLine & "Do you want to continue?", _
+                              vbYesNo + vbQuestion, "Confirm Meeting")
         
-        ' Wait for user to process the meeting
-        userResponse = MsgBox("Process meeting: " & subject & vbNewLine & _
-                               "Click YES to proceed to next meeting," & vbNewLine & _
-                               "Click NO to keep this window open.", _
-                               vbYesNo + vbQuestion, "Meeting Processing")
+        ' Close the appointment
+        olAppt.Close(0) ' 0 = olDiscard
         
-        ' Close the appointment if user chooses to proceed
-        If userResponse = vbYes Then
-            ' Attempt to close the appointment
-            On Error Resume Next
-            olAppt.Close(0) ' 0 = olDiscard
-            On Error GoTo 0
+        ' Check user response
+        If userResponse = vbNo Then
+            Exit For
         End If
-        
-        ' Increment processed meetings counter
-        processedMeetings = processedMeetings + 1
-        
-        ' Clean up this iteration's objects
-        Set olAppt = Nothing
-        
-        ' Ensure Outlook remains active
-        AppActivate "Microsoft Outlook"
-        
-        ' Add a small delay to ensure Outlook can process
-        DoEvents
         
 NextRow:
         ' Clear any lingering errors
         Err.Clear
+        
+        ' Small pause between iterations
+        Application.Wait Now + TimeValue("00:00:01")
     Next i
     
     ' Clean up Outlook application
@@ -150,5 +141,5 @@ NextRow:
     Application.DisplayAlerts = True
     
     ' Show completion message
-    MsgBox "Processed " & processedMeetings & " meetings successfully.", vbInformation
+    MsgBox "Meeting scheduling process completed.", vbInformation
 End Sub
