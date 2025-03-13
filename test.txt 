@@ -26,14 +26,19 @@ Sub DisplayDataInMsgBox()
     
     ' Loop through each row and build the message
     For i = 2 To lastRow ' Assuming the first row contains headers
-        msg = "Date: " & ws.Cells(i, 1).Value & vbCrLf & _
-              "Start Time: " & ws.Cells(i, 2).Value & vbCrLf & _
-              "End Time: " & ws.Cells(i, 3).Value & vbCrLf & _
-              "Subject: " & ws.Cells(i, 4).Value & vbCrLf & _
-              "Required Members: " & ws.Cells(i, 5).Value & vbCrLf & _
-              "Optional Members: " & ws.Cells(i, 6).Value
-        
-        ' Display the message box
-        MsgBox msg, vbInformation, "Event Details"
+        ' Check if the row is not empty
+        If Application.WorksheetFunction.CountA(ws.Rows(i)) > 0 Then
+            msg = "Date: " & ws.Cells(i, 1).Value & vbCrLf & _
+                  "Start Time: " & ws.Cells(i, 2).Value & vbCrLf & _
+                  "End Time: " & ws.Cells(i, 3).Value & vbCrLf & _
+                  "Subject: " & ws.Cells(i, 4).Value & vbCrLf & _
+                  "Required Members: " & ws.Cells(i, 5).Value & vbCrLf & _
+                  "Optional Members: " & ws.Cells(i, 6).Value
+            
+            ' Display the message box only if msg is not empty
+            If Trim(msg) <> "" Then
+                MsgBox msg, vbInformation, "Event Details"
+            End If
+        End If
     Next i
 End Sub
