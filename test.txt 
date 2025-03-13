@@ -108,6 +108,9 @@ Sub ScheduleMeetingsInOutlook()
         ' Display the appointment
         olAppt.Display
         
+        ' Bring the Outlook window to the foreground
+        AppActivate "Microsoft Outlook"
+        
         ' Wait for user to process the meeting
         userResponse = MsgBox("Process meeting: " & subject & vbNewLine & _
                                "Click YES to proceed to next meeting," & vbNewLine & _
@@ -128,8 +131,11 @@ Sub ScheduleMeetingsInOutlook()
         ' Clean up this iteration's objects
         Set olAppt = Nothing
         
-        ' Add a small delay to ensure Outlook can process the window
-        Application.Wait Now + TimeValue("00:00:01")
+        ' Ensure Outlook remains active
+        AppActivate "Microsoft Outlook"
+        
+        ' Add a small delay to ensure Outlook can process
+        DoEvents
         
 NextRow:
         ' Clear any lingering errors
