@@ -1,45 +1,73 @@
-Sub GetCalendarItemsForSpecificDateAlternative()
-    Dim outlookApp As Outlook.Application
-    Dim outlookNamespace As Outlook.Namespace
-    Dim calendarFolder As Outlook.Folder
-    Dim items As Outlook.Items
-    Dim myapt As Outlook.AppointmentItem
+Sub AddParticipantsToExistingMeeting()
+    Dim outlookApp As Object
+    Dim outlookNamespace As Object
+    Dim calendarFolder As Object
+    Dim items As Object
+    Dim myapt As Object
+    Dim ws As Worksheet
+    Dim i As Integer
+    Dim lastRow As Integer
+    Dim existingRecipients As Object
+    Dim additionalParticipants As String
+    Dim newParticipants As String
+    Dim meetingDate As Date
     Dim specificDate As Date
-    
-    ' Set the specific date
-    specificDate = DateSerial(2025, 3, 14)
-    
+    Dim recipient As Object
+
+    ' Set the meeting date (Assuming meetingDate is already defined)
+    specificDate = meetingDate 
+
     ' Create Outlook Application
     Set outlookApp = CreateObject("Outlook.Application")
-    
-    ' Get Namespace
     Set outlookNamespace = outlookApp.GetNamespace("MAPI")
-    
-    ' Get Calendar Folder
-    Set calendarFolder = outlookNamespace.GetDefaultFolder(olFolderCalendar)
-    
-    ' Get all items
+    Set calendarFolder = outlookNamespace.GetDefaultFolder(9) ' 9 = olFolderCalendar
     Set items = calendarFolder.Items
     
     ' Ensure recurring items are included
     items.IncludeRecurrences = True
-    
-    ' Loop through all items
+
+    ' Find the meeting on the specific date
     For Each myapt In items
-        ' Check if the appointment is on the specific date
         If DateValue(myapt.Start) = specificDate Then
-            ' Display meeting details
-            Debug.Print "Subject: " & myapt.Subject
-            Debug.Print "Start Time: " & myapt.Start
-            Debug.Print "End Time: " & myapt.End
-            Debug.Print "Location: " & myapt.Location
-            Debug.Print "-------------------"
+            ' Get existing recipients in a dictionary to avoid duplicates
+            Set existingRecipients = CreateObject("Scripting.Dictionary")
+            For Each recipient In myapt.Recipients
+                existingRecipients.Add LCase(recipient.Address), True
+            Next recipient
+
+            ' Get additional participants from Excel
+            Set ws = ThisWorkbook.Sheets("Sheet1") ' Adjust sheet name
+            lastRow = ws.Cells(ws.Rows.Count, 7).End(xlUp).Row
+
+            ' Collect new participants
+            newParticipants = ""
+            For i = 2 To lastRow
+                additionalParticipants = Trim(ws.Cells(i, 7).Value)
+                If additionalParticipants <> "" Then
+                    If Not existingRecipients.exists(LCase(additionalParticipants)) Then
+                        newParticipants = newParticipants & ";" & additionalParticipants
+                    End If
+                End If
+            Next i
+
+            ' Add new participants if any
+            If newParticipants <> "" Then
+                myapt.Recipients.Add newParticipants
+                myapt.Recipients.ResolveAll
+                myapt.Save
+                myapt.Send ' Resend invite to new participants only
+            End If
+
+            Exit For ' Exit loop after updating the meeting
         End If
     Next myapt
-    
+
     ' Clean up
     Set items = Nothing
     Set calendarFolder = Nothing
     Set outlookNamespace = Nothing
     Set outlookApp = Nothing
+    Set existingRecipients = Nothing
+
+    MsgBox "New participants added successfully!", vbInformation
 End Sub
