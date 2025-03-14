@@ -1,53 +1,21 @@
-Function MeetingExists(subject As String, meetingDate As Date, meetingTime As Date) As Boolean
-    Dim outlookApp As Object
-    Dim outlookNamespace As Object
-    Dim calendarFolder As Object
-    Dim items As Object
-    Dim meetingItem As Object
-    Dim filter As String
-    Dim fullStartTime As Date
+Sub GetCalendarItems()
+    Dim outlookApp As Outlook.Application
+    Dim outlookNamespace As Outlook.Namespace
+    Dim calendarFolder As Outlook.Folder
+    Dim items As Outlook.Items
+    Dim item As Object
     
-    ' Initialize Outlook
-    On Error Resume Next
-    Set outlookApp = GetObject(, "Outlook.Application")
-    If outlookApp Is Nothing Then Set outlookApp = CreateObject("Outlook.Application")
-    On Error GoTo 0
-    
-    If outlookApp Is Nothing Then
-        MsgBox "Outlook is not installed or running.", vbCritical
-        MeetingExists = False
-        Exit Function
-    End If
-
-    ' Get Calendar
+    Set outlookApp = CreateObject("Outlook.Application")
     Set outlookNamespace = outlookApp.GetNamespace("MAPI")
-    Set calendarFolder = outlookNamespace.GetDefaultFolder(9) ' 9 = olFolderCalendar
+    Set calendarFolder = outlookNamespace.GetDefaultFolder(olFolderCalendar)
     Set items = calendarFolder.Items
     
-    ' Ensure items are sorted
-    items.Sort "[Start]", False
+    ' Sort items by start date
+    items.Sort "[Start]", True
     items.IncludeRecurrences = True
     
-    ' Convert date and time
-    fullStartTime = meetingDate + meetingTime
-    
-    ' Filter for meeting with exact date, time, and subject
-    filter = "[Start] = '" & Format(fullStartTime, "ddddd hh:mm AMPM") & "' AND [Subject] = '" & subject & "'"
-    
-    ' Search for the meeting
-    Set meetingItem = items.Find(filter)
-    
-    ' Check if found
-    If Not meetingItem Is Nothing Then
-        MeetingExists = True
-    Else
-        MeetingExists = False
-    End If
-    
-    ' Cleanup
-    Set meetingItem = Nothing
-    Set items = Nothing
-    Set calendarFolder = Nothing
-    Set outlookNamespace = Nothing
-    Set outlookApp = Nothing
-End Function
+    ' Loop through calendar items
+    For Each item In items
+        Debug.Print item.Subject & " - " & item.Start
+    Next item
+End Sub
