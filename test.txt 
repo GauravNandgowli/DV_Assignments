@@ -1,21 +1,45 @@
-Sub GetCalendarItems()
+Sub GetCalendarItemsForSpecificDateAlternative()
     Dim outlookApp As Outlook.Application
     Dim outlookNamespace As Outlook.Namespace
     Dim calendarFolder As Outlook.Folder
     Dim items As Outlook.Items
-    Dim item As Object
+    Dim myapt As Outlook.AppointmentItem
+    Dim specificDate As Date
     
+    ' Set the specific date
+    specificDate = DateSerial(2025, 3, 14)
+    
+    ' Create Outlook Application
     Set outlookApp = CreateObject("Outlook.Application")
+    
+    ' Get Namespace
     Set outlookNamespace = outlookApp.GetNamespace("MAPI")
+    
+    ' Get Calendar Folder
     Set calendarFolder = outlookNamespace.GetDefaultFolder(olFolderCalendar)
+    
+    ' Get all items
     Set items = calendarFolder.Items
     
-    ' Sort items by start date
-    items.Sort "[Start]", True
+    ' Ensure recurring items are included
     items.IncludeRecurrences = True
     
-    ' Loop through calendar items
-    For Each item In items
-        Debug.Print item.Subject & " - " & item.Start
-    Next item
+    ' Loop through all items
+    For Each myapt In items
+        ' Check if the appointment is on the specific date
+        If DateValue(myapt.Start) = specificDate Then
+            ' Display meeting details
+            Debug.Print "Subject: " & myapt.Subject
+            Debug.Print "Start Time: " & myapt.Start
+            Debug.Print "End Time: " & myapt.End
+            Debug.Print "Location: " & myapt.Location
+            Debug.Print "-------------------"
+        End If
+    Next myapt
+    
+    ' Clean up
+    Set items = Nothing
+    Set calendarFolder = Nothing
+    Set outlookNamespace = Nothing
+    Set outlookApp = Nothing
 End Sub
