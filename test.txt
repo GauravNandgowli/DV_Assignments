@@ -1,6 +1,9 @@
 Sub ForwardMeetingToNewRecipients()
     Dim oApp As Outlook.Application
+    Dim oNamespace As Outlook.Namespace
+    Dim oSentItems As Outlook.Folder
     Dim oMeeting As Outlook.AppointmentItem
+    Dim oMeetingItem As Outlook.MeetingItem
     Dim oForward As Outlook.MeetingItem
     Dim Recipients As String
     Dim RecipArray() As String
@@ -8,40 +11,56 @@ Sub ForwardMeetingToNewRecipients()
     
     ' Initialize Outlook Application
     Set oApp = New Outlook.Application
+    Set oNamespace = oApp.GetNamespace("MAPI")
+    Set oSentItems = oNamespace.GetDefaultFolder(olFolderSentMail)
     
     ' Reference the existing meeting (use suitable identifiers for your case)
-    ' This example assumes you have a unique subject or identifier
     On Error Resume Next
     Set oMeeting = oApp.Session.GetDefaultFolder(olFolderCalendar).Items("Your Meeting Subject")
     On Error GoTo 0
     
     ' Check if the meeting was found
     If Not oMeeting Is Nothing Then
-        ' Display meeting details for debugging
-        MsgBox "Meeting Found:" & vbCrLf & _
-               "Subject: " & oMeeting.Subject & vbCrLf & _
-               "Start: " & oMeeting.Start & vbCrLf & _
-               "Location: " & oMeeting.Location, vbInformation, "Meeting Details"
+        ' Send the meeting to yourself to create a MeetingItem in Sent Items
+        oMeeting.Recipients.Add oNamespace.CurrentUser.Address
+        oMeeting.Send
         
-        ' Forward the meeting
-        Set oForward = oMeeting.Forward
+        ' Wait for the item to appear in Sent Items
+        Application.Wait (Now + TimeValue("0:00:05")) ' Wait for 5 seconds
         
-        ' Add new recipients from a string variable
-        Recipients = "xxx@xxx.com, xxx2@xxx.com" ' Update with your variable
-        RecipArray = Split(Recipients, ",")
+        ' Find the MeetingItem in Sent Items
+        Set oMeetingItem = oSentItems.Items.Find("[Subject] = 'Your Meeting Subject'")
         
-        For i = LBound(RecipArray) To UBound(RecipArray)
-            oForward.Recipients.Add Trim(RecipArray(i))
-        Next i
-        
-        ' Display the meeting invite for review before sending
-        oForward.Display
+        If Not oMeetingItem Is Nothing Then
+            ' Display meeting details for debugging
+            MsgBox "Meeting Found:" & vbCrLf & _
+                   "Subject: " & oMeetingItem.Subject & vbCrLf & _
+                   "Start: " & oMeetingItem.Start & vbCrLf & _
+                   "Location: " & oMeetingItem.Location, vbInformation, "Meeting Details"
+            
+            ' Forward the meeting
+            Set oForward = oMeetingItem.Forward
+            
+            ' Add new recipients from a string variable
+            Recipients = "xxx@xxx.com, xxx2@xxx.com" ' Update with your variable
+            RecipArray = Split(Recipients, ",")
+            
+            For i = LBound(RecipArray) To UBound(RecipArray)
+                oForward.Recipients.Add Trim(RecipArray(i))
+            Next i
+            
+            ' Display the meeting invite for review before sending
+            oForward.Display
+        Else
+            MsgBox "Meeting not found in Sent Items. Please check the subject or identifier.", vbExclamation, "Error"
+        End If
     Else
-        MsgBox "Meeting not found. Please check the subject or identifier.", vbExclamation, "Error"
+        MsgBox "Meeting not found in Calendar. Please check the subject or identifier.", vbExclamation, "Error"
     End If
 
     ' Clean up
     Set oForward = Nothing
+    Set oMeetingItem = Nothing
     Set oMeeting = Nothing
     Set oApp = Nothing
 End Sub
