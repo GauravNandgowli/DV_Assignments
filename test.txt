@@ -10,21 +10,35 @@ Sub ForwardMeetingToNewRecipients()
     Set oApp = New Outlook.Application
     
     ' Reference the existing meeting (use suitable identifiers for your case)
+    ' This example assumes you have a unique subject or identifier
+    On Error Resume Next
     Set oMeeting = oApp.Session.GetDefaultFolder(olFolderCalendar).Items("Your Meeting Subject")
+    On Error GoTo 0
     
-    ' Forward the meeting
-    Set oForward = oMeeting.Forward
-    
-    ' Add new recipients from a string variable
-    Recipients = "xxx@xxx.com, xxx2@xxx.com" ' Update with your variable
-    RecipArray = Split(Recipients, ",")
-    
-    For i = LBound(RecipArray) To UBound(RecipArray)
-        oForward.Recipients.Add Trim(RecipArray(i))
-    Next i
-    
-    ' Display the meeting invite for review before sending
-    oForward.Display
+    ' Check if the meeting was found
+    If Not oMeeting Is Nothing Then
+        ' Display meeting details for debugging
+        MsgBox "Meeting Found:" & vbCrLf & _
+               "Subject: " & oMeeting.Subject & vbCrLf & _
+               "Start: " & oMeeting.Start & vbCrLf & _
+               "Location: " & oMeeting.Location, vbInformation, "Meeting Details"
+        
+        ' Forward the meeting
+        Set oForward = oMeeting.Forward
+        
+        ' Add new recipients from a string variable
+        Recipients = "xxx@xxx.com, xxx2@xxx.com" ' Update with your variable
+        RecipArray = Split(Recipients, ",")
+        
+        For i = LBound(RecipArray) To UBound(RecipArray)
+            oForward.Recipients.Add Trim(RecipArray(i))
+        Next i
+        
+        ' Display the meeting invite for review before sending
+        oForward.Display
+    Else
+        MsgBox "Meeting not found. Please check the subject or identifier.", vbExclamation, "Error"
+    End If
 
     ' Clean up
     Set oForward = Nothing
