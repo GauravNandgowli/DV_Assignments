@@ -1,0 +1,58 @@
+If Len(additional Participants) >= 11 Then
+    ' Find the existing meeting in Outlook
+    Dim outlookNamespace As Object
+    Dim calendarFolder As Object
+    Dim existingAppointment As Object
+    
+    Set outlookNamespace = olApp.GetNamespace("MAPI")
+    Set calendarFolder = outlookNamespace.GetDefaultFolder(9) ' olFolderCalendar
+    
+    ' Search for the existing meeting
+    For Each existingAppointment In calendarFolder.Items
+        ' Match the existing appointment based on subject, date, and time
+        If existingAppointment.Subject = subject And _
+           DateValue(existingAppointment.Start) = meetingDate And _
+           TimeValue(existingAppointment.Start) = startTime Then
+            
+            ' Open the existing appointment
+            existingAppointment.Open
+            
+            ' Add additional participants
+            If Len(Trim(additional Participants)) > 0 Then
+                ' Check if multiple emails are separated by semicolon or comma
+                Dim participants As Variant
+                participants = Split(Replace(Replace(additional Participants, " ", ""), ",", ";"), ";")
+                
+                Dim participant As Variant
+                For Each participant In participants
+                    If Len(Trim(CStr(participant))) > 0 Then
+                        ' Add as required attendee if not already invited
+                        If InStr(existingAppointment.RequiredAttendees, CStr(participant)) = 0 And _
+                           InStr(existingAppointment.OptionalAttendees, CStr(participant)) = 0 Then
+                            
+                            If Len(existingAppointment.RequiredAttendees) > 0 Then
+                                existingAppointment.RequiredAttendees = existingAppointment.RequiredAttendees & "; " & Trim(CStr(participant))
+                            Else
+                                existingAppointment.RequiredAttendees = Trim(CStr(participant))
+                            End If
+                        End If
+                    End If
+                Next participant
+                
+                ' Save and send update
+                existingAppointment.Save
+                existingAppointment.Send
+            End If
+            
+            ' Close the appointment
+            existingAppointment.Close(0)
+            
+            Exit For
+        End If
+    Next existingAppointment
+    
+    ' Clean up
+    Set existingAppointment = Nothing
+    Set calendarFolder = Nothing
+    Set outlookNamespace = Nothing
+End If
