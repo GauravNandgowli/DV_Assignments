@@ -138,3 +138,73 @@ Sub RemoveDuplicatesAndSeparateEmails()
     
     MsgBox "Duplicate emails have been removed and emails have been separated.", vbInformation
 End Sub
+---------------------------------------------------------------------------------------------------------------------
+column duplicates
+-----------------------------------------------------------------------------------------------------------------------
+Sub RemoveDuplicatesFromSecondColumn()
+    Dim ws As Worksheet
+    Dim emailRange1 As Range
+    Dim emailRange2 As Range
+    Dim cell1 As Range
+    Dim cell2 As Range
+    Dim emailDict As Object
+    Dim emailArray() As String
+    Dim email As Variant ' Declare as Variant for dictionary keys
+    Dim result1 As String
+    Dim result2 As String
+    Dim i As Integer
+    
+    ' Set the worksheet
+    Set ws = ThisWorkbook.Sheets("Sheet1") ' Change "Sheet1" to your sheet name
+    
+    ' Define the ranges for the two columns you want to process
+    Set emailRange1 = ws.Range("A1:A10") ' Adjust the range as needed
+    Set emailRange2 = ws.Range("B1:B10") ' Adjust the range as needed
+    
+    ' Process each pair of cells in the specified ranges
+    For i = 1 To emailRange1.Rows.Count
+        ' Initialize a dictionary to store unique emails from the first cell
+        Set emailDict = CreateObject("Scripting.Dictionary")
+        
+        ' Normalize delimiters and split emails in the first cell
+        Dim normalizedContent1 As String
+        normalizedContent1 = Replace(emailRange1.Cells(i, 1).Value, ";", ",")
+        normalizedContent1 = Replace(normalizedContent1, " ", ",")
+        emailArray = Split(normalizedContent1, ",")
+        
+        ' Add unique emails from the first cell to the dictionary
+        For Each email In emailArray
+            email = Trim(email)
+            If email <> "" Then
+                If Not emailDict.exists(email) Then
+                    emailDict(email) = True
+                End If
+            End If
+        Next email
+        
+        ' Normalize delimiters and split emails in the second cell
+        Dim normalizedContent2 As String
+        normalizedContent2 = Replace(emailRange2.Cells(i, 1).Value, ";", ",")
+        normalizedContent2 = Replace(normalizedContent2, " ", ",")
+        emailArray = Split(normalizedContent2, ",")
+        
+        ' Reassemble unique emails for the second cell, removing duplicates found in the first cell
+        result2 = ""
+        For Each email In emailArray
+            email = Trim(email)
+            If email <> "" Then
+                If Not emailDict.exists(email) Then
+                    result2 = result2 & email & "; "
+                End If
+            End If
+        Next email
+        
+        ' Remove the trailing delimiter and update the second cell
+        If Len(result2) > 0 Then
+            result2 = Left(result2, Len(result2) - 2)
+        End If
+        emailRange2.Cells(i, 1).Value = result2
+    Next i
+    
+    MsgBox "Duplicates from the second column have been removed for each row.", vbInformation
+End Sub
