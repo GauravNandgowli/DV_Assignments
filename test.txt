@@ -93,8 +93,7 @@ Sub RemoveDuplicatesWithinCells()
     Dim cell As Range
     Dim emailDict As Object
     Dim emailArray() As String
-    Dim uniqueEmails As Collection
-    Dim email As String
+    Dim email As Variant ' Declare as Variant for dictionary keys
     Dim result As String
     Dim i As Integer
     
@@ -110,18 +109,26 @@ Sub RemoveDuplicatesWithinCells()
         ' Initialize a dictionary to store unique emails for this cell
         Set emailDict = CreateObject("Scripting.Dictionary")
         
-        ' Split the cell content into an array of emails
-        emailArray = Split(cell.Value, ",; ")
+        ' Split the cell content into an array of emails using multiple delimiters
+        emailArray = Split(cell.Value, ",")
+        
+        ' Further split by semicolon and space if needed
+        Dim tempArray() As String
+        Dim tempEmail As String
+        Dim j As Integer
         
         ' Check each email for uniqueness within the cell
         On Error Resume Next ' Ignore errors when adding duplicates to the collection
         For i = LBound(emailArray) To UBound(emailArray)
-            email = Trim(emailArray(i))
-            If email <> "" Then
-                If Not emailDict.exists(email) Then
-                    emailDict(email) = True
+            tempArray = Split(emailArray(i), ";")
+            For j = LBound(tempArray) To UBound(tempArray)
+                tempEmail = Trim(tempArray(j))
+                If tempEmail <> "" Then
+                    If Not emailDict.exists(tempEmail) Then
+                        emailDict(tempEmail) = True
+                    End If
                 End If
-            End If
+            Next j
         Next i
         On Error GoTo 0 ' Resume normal error handling
         
