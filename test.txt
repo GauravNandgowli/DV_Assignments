@@ -87,61 +87,54 @@ End Sub
 ----------------------------------------------------------------------------------------------
 Remove column duplicates
 ----------------------------------------------------------------------------------------------
-Sub RemoveDuplicatesWithinCells()
+Sub RemoveDuplicatesAndSeparateEmails()
     Dim ws As Worksheet
     Dim emailRange As Range
     Dim cell As Range
     Dim emailDict As Object
-    Dim emailArray() As String
-    Dim email As Variant ' Declare as Variant for dictionary keys
+    Dim email As Variant
     Dim result As String
-    Dim i As Integer
+    Dim regex As Object
+    Dim matches As Object
+    Dim match As Object
     
     ' Set the worksheet
     Set ws = ThisWorkbook.Sheets("Sheet1") ' Change "Sheet1" to your sheet name
     
     ' Define the range for the columns you want to process
-    ' Assuming columns A, B, and C are used
     Set emailRange = ws.Range("A1:C10") ' Adjust the range as needed
+    
+    ' Create a regular expression object
+    Set regex = CreateObject("VBScript.RegExp")
+    regex.Pattern = "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"
+    regex.Global = True
     
     ' Process each cell in the specified range
     For Each cell In emailRange
         ' Initialize a dictionary to store unique emails for this cell
         Set emailDict = CreateObject("Scripting.Dictionary")
         
-        ' Normalize delimiters by replacing semicolons and spaces with commas
-        Dim normalizedContent As String
-        normalizedContent = Replace(cell.Value, ";", ",")
-        normalizedContent = Replace(normalizedContent, " ", ",")
+        ' Find all matches of email patterns in the cell
+        Set matches = regex.Execute(cell.Value)
         
-        ' Split the cell content into an array of emails using comma as the delimiter
-        emailArray = Split(normalizedContent, ",")
-        
-        ' Check each email for uniqueness within the cell
+        ' Check each match for uniqueness within the cell
         On Error Resume Next ' Ignore errors when adding duplicates to the collection
-        For i = LBound(emailArray) To UBound(emailArray)
-            email = Trim(emailArray(i))
+        For Each match In matches
+            email = Trim(match.Value)
             If email <> "" Then
                 If Not emailDict.exists(email) Then
                     emailDict(email) = True
                 End If
             End If
-        Next i
+        Next match
         On Error GoTo 0 ' Resume normal error handling
         
-        ' Reassemble unique emails into a single string
-        result = ""
-        For Each email In emailDict.Keys
-            result = result & email & ", "
-        Next email
+        ' Reassemble unique emails into a single string separated by semicolons
+        result = Join(emailDict.Keys, "; ")
         
-        ' Remove the trailing delimiter and update the cell
-        If Len(result) > 0 Then
-            result = Left(result, Len(result) - 2)
-        End If
+        ' Update the cell with the result
         cell.Value = result
     Next cell
     
-    MsgBox "Duplicate emails have been removed within each cell.", vbInformation
+    MsgBox "Duplicate emails have been removed and emails have been separated.", vbInformation
 End Sub
-        
