@@ -304,3 +304,108 @@ Sub RemoveDuplicatesAcrossThreeColumns()
     
     MsgBox "Duplicates have been removed across columns for each row.", vbInformation
 End Sub
+------------------------------------------------------------------------
+combination
+------------------------------------------------------------------------
+Sub RemoveDuplicatesWithinAndAcrossColumns()
+    Dim ws As Worksheet
+    Dim emailRange1 As Range
+    Dim emailRange2 As Range
+    Dim emailRange3 As Range
+    Dim emailDict1 As Object
+    Dim emailDict2 As Object
+    Dim emailArray() As String
+    Dim email As Variant ' Declare as Variant for dictionary keys
+    Dim result1 As String
+    Dim result2 As String
+    Dim result3 As String
+    Dim i As Integer
+    
+    ' Set the worksheet
+    Set ws = ThisWorkbook.Sheets("Sheet1") ' Change "Sheet1" to your sheet name
+    
+    ' Define the ranges for the three columns you want to process
+    Set emailRange1 = ws.Range("A1:A10") ' Adjust the range as needed
+    Set emailRange2 = ws.Range("B1:B10") ' Adjust the range as needed
+    Set emailRange3 = ws.Range("C1:C10") ' Adjust the range as needed
+    
+    ' Process each row in the specified ranges
+    For i = 1 To emailRange1.Rows.Count
+        ' Initialize dictionaries to store unique emails
+        Set emailDict1 = CreateObject("Scripting.Dictionary")
+        Set emailDict2 = CreateObject("Scripting.Dictionary")
+        
+        ' Normalize delimiters and split emails in the first cell
+        Dim normalizedContent1 As String
+        normalizedContent1 = Replace(emailRange1.Cells(i, 1).Value, ";", ",")
+        normalizedContent1 = Replace(normalizedContent1, " ", ",")
+        emailArray = Split(normalizedContent1, ",")
+        
+        ' Add unique emails from the first cell to the first dictionary
+        result1 = ""
+        For Each email In emailArray
+            email = Trim(email)
+            If email <> "" Then
+                If Not emailDict1.exists(email) Then
+                    emailDict1(email) = True
+                    result1 = result1 & email & "; "
+                End If
+            End If
+        Next email
+        
+        ' Remove the trailing delimiter and update the first cell
+        If Len(result1) > 0 Then
+            result1 = Left(result1, Len(result1) - 2)
+        End If
+        emailRange1.Cells(i, 1).Value = result1
+        
+        ' Normalize delimiters and split emails in the second cell
+        Dim normalizedContent2 As String
+        normalizedContent2 = Replace(emailRange2.Cells(i, 1).Value, ";", ",")
+        normalizedContent2 = Replace(normalizedContent2, " ", ",")
+        emailArray = Split(normalizedContent2, ",")
+        
+        ' Reassemble unique emails for the second cell, removing duplicates found in the first cell
+        result2 = ""
+        For Each email In emailArray
+            email = Trim(email)
+            If email <> "" Then
+                If Not emailDict1.exists(email) Then
+                    result2 = result2 & email & "; "
+                    emailDict2(email) = True ' Add to second dictionary for third column check
+                End If
+            End If
+        Next email
+        
+        ' Remove the trailing delimiter and update the second cell
+        If Len(result2) > 0 Then
+            result2 = Left(result2, Len(result2) - 2)
+        End If
+        emailRange2.Cells(i, 1).Value = result2
+        
+        ' Normalize delimiters and split emails in the third cell
+        Dim normalizedContent3 As String
+        normalizedContent3 = Replace(emailRange3.Cells(i, 1).Value, ";", ",")
+        normalizedContent3 = Replace(normalizedContent3, " ", ",")
+        emailArray = Split(normalizedContent3, ",")
+        
+        ' Reassemble unique emails for the third cell, removing duplicates found in the first and second cells
+        result3 = ""
+        For Each email In emailArray
+            email = Trim(email)
+            If email <> "" Then
+                If Not emailDict1.exists(email) And Not emailDict2.exists(email) Then
+                    result3 = result3 & email & "; "
+                End If
+            End If
+        Next email
+        
+        ' Remove the trailing delimiter and update the third cell
+        If Len(result3) > 0 Then
+            result3 = Left(result3, Len(result3) - 2)
+        End If
+        emailRange3.Cells(i, 1).Value = result3
+    Next i
+    
+    MsgBox "Duplicates have been removed within each cell and across columns for each row.", vbInformation
+End Sub
