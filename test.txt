@@ -409,3 +409,49 @@ Sub RemoveDuplicatesWithinAndAcrossColumns()
     
     MsgBox "Duplicates have been removed within each cell and across columns for each row.", vbInformation
 End Sub
+------------------------------------------------------------------------
+minutes
+-------------------------------------------------------------------------
+import re
+import pandas as pd
+
+def extract_names_and_emails(text):
+    # Regular expression to match the email patterns
+    pattern = r'([a-z]+(?:-[a-z]+)*)\.([a-z]+)(?:-ext)?@domain\.com'
+    
+    # Find all matches in the text
+    matches = re.findall(pattern, text, re.IGNORECASE)
+    
+    # Prepare the output list
+    output = []
+    
+    for match in matches:
+        lastnames = match[0].replace('-', ' ')
+        firstname = match[1]
+        email = f"{match[0]}.{match[1]}@domain.com"
+        full_name = f"{firstname.capitalize()} {lastnames.capitalize()}"
+        output.append(f"{full_name} {email}")
+    
+    return output
+
+def process_excel(file_path):
+    # Read the Excel file
+    df = pd.read_excel(file_path)
+    
+    # Assuming the emails are in the first column
+    emails = df.iloc[:, 0].tolist()
+    
+    # Process each email
+    results = []
+    for email in emails:
+        results.extend(extract_names_and_emails(email))
+    
+    return results
+
+# Example usage
+file_path = 'emails.xlsx'  # Replace with your Excel file path
+results = process_excel(file_path)
+
+# Print the results
+for result in results:
+    print(result)
