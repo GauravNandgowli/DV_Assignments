@@ -83,3 +83,60 @@ Sub ForwardSpecificMeeting()
     Set oMeeting = Nothing
     Set oApp = Nothing
 End Sub
+
+----------------------------------------------------------------------------------------------
+Remove column duplicates
+----------------------------------------------------------------------------------------------
+Sub RemoveDuplicatesWithinCells()
+    Dim ws As Worksheet
+    Dim emailRange As Range
+    Dim cell As Range
+    Dim emailDict As Object
+    Dim emailArray() As String
+    Dim uniqueEmails As Collection
+    Dim email As String
+    Dim result As String
+    Dim i As Integer
+    
+    ' Set the worksheet
+    Set ws = ThisWorkbook.Sheets("Sheet1") ' Change "Sheet1" to your sheet name
+    
+    ' Define the range for the columns you want to process
+    ' Assuming columns A, B, and C are used
+    Set emailRange = ws.Range("A1:C10") ' Adjust the range as needed
+    
+    ' Process each cell in the specified range
+    For Each cell In emailRange
+        ' Initialize a dictionary to store unique emails for this cell
+        Set emailDict = CreateObject("Scripting.Dictionary")
+        
+        ' Split the cell content into an array of emails
+        emailArray = Split(cell.Value, ",; ")
+        
+        ' Check each email for uniqueness within the cell
+        On Error Resume Next ' Ignore errors when adding duplicates to the collection
+        For i = LBound(emailArray) To UBound(emailArray)
+            email = Trim(emailArray(i))
+            If email <> "" Then
+                If Not emailDict.exists(email) Then
+                    emailDict(email) = True
+                End If
+            End If
+        Next i
+        On Error GoTo 0 ' Resume normal error handling
+        
+        ' Reassemble unique emails into a single string
+        result = ""
+        For Each email In emailDict.Keys
+            result = result & email & ", "
+        Next email
+        
+        ' Remove the trailing delimiter and update the cell
+        If Len(result) > 0 Then
+            result = Left(result, Len(result) - 2)
+        End If
+        cell.Value = result
+    Next cell
+    
+    MsgBox "Duplicate emails have been removed within each cell.", vbInformation
+End Sub
