@@ -571,3 +571,59 @@ Sub RemoveDuplicatesWithinAndAcrossColumns()
 
     MsgBox "Duplicates have been removed within each cell and across columns for each row.", vbInformation
 End Sub
+-------------------------------------------------------------------------
+combo 2
+--------------------------------------------------------------------------
+Sub RemoveDuplicatesWithinAndAcrossColumnsSameRow()
+    Dim ws As Worksheet
+    Dim lastRow As Long
+    Dim i As Long, j As Long
+    Dim emailArray() As String
+    Dim email As Variant
+    Dim emailDict As Object
+
+    Set ws = ThisWorkbook.Sheets("Sheet1") ' Change "Sheet1" to your sheet name
+
+    lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row ' Dynamically find last row
+
+    For i = 1 To lastRow
+        Set emailDict = CreateObject("Scripting.Dictionary") ' Re-initialize for each row
+
+        ' Remove duplicates within each cell first
+        For j = 1 To 3 ' Loop through columns A, B, and C
+            emailArray = Split(Replace(Replace(ws.Cells(i, j).Value, ";", ","), " ", ","), ",")
+            ws.Cells(i, j).ClearContents
+            For Each email In emailArray
+                email = Trim(email)
+                If email <> "" And Not emailDict.exists(email) Then
+                    ws.Cells(i, j).Value = ws.Cells(i, j).Value & email & "; "
+                    emailDict(email) = True ' Add to dictionary for cross-column check
+                End If
+            Next email
+            If ws.Cells(i, j).Value <> "" Then
+                ws.Cells(i, j).Value = Left(ws.Cells(i, j).Value, Len(ws.Cells(i, j).Value) - 2)
+            End If
+        Next j
+
+
+        'Now remove duplicates across columns within the same row, prioritizing leftmost columns
+        Set emailDict = CreateObject("Scripting.Dictionary") ' Reset dictionary for cross-column check
+        For j = 1 To 3
+            emailArray = Split(Replace(Replace(ws.Cells(i, j).Value, ";", ","), " ", ","), ",")
+            ws.Cells(i, j).ClearContents
+            For Each email In emailArray
+                email = Trim(email)
+                If email <> "" And Not emailDict.exists(email) Then
+                    ws.Cells(i, j).Value = ws.Cells(i, j).Value & email & "; "
+                    emailDict(email) = True
+                End If
+            Next email
+            If ws.Cells(i, j).Value <> "" Then
+                ws.Cells(i, j).Value = Left(ws.Cells(i, j).Value, Len(ws.Cells(i, j).Value) - 2)
+            End If
+        Next j
+
+    Next i
+
+    MsgBox "Duplicates have been removed within and across columns for each row.", vbInformation
+End Sub
