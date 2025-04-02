@@ -715,3 +715,5 @@ Sub RemoveDuplicatesWithinAndAcrossColumnsSameRow()
     
     MsgBox "Duplicates have been removed within and across columns for each row.", vbInformation
 End Sub
+
+([a-z]+(?:-[a-z]+)*)\.([a-z-]+)(?:-ext)?@([a-z]+(?:\.[a-z]+)+)
