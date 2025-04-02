@@ -631,32 +631,87 @@ End Sub
 
 
 #####_#_#-=#=#=#==#=#
-Function ExtractEmails(cellValue As String) As Variant
+' First, add this Function to handle RegEx matching
+Function ExtractEmails(ByVal text As String) As Collection
     Dim regex As Object
     Dim matches As Object
     Dim match As Object
-    Dim result() As String
-    Dim i As Integer
+    Dim emailCollection As New Collection
     
-    ' Create RegExp object
     Set regex = CreateObject("VBScript.RegExp")
     
-    ' Define regex pattern (adjusted for VBA compatibility)
-    regex.Pattern = "([a-z]+(?:-[a-z]+)*)\.([a-z]+)(-ext)?@([a-z]+\.[a-z]+)"
-    regex.Global = True
-    regex.IgnoreCase = True
+    With regex
+        .Global = True
+        .IgnoreCase = True
+        ' Pattern for matching emails like firstname.lastname@domain.com or firstname-lastname.lastname-ext@domain.com
+        .Pattern = "([a-z]+(?:-[a-z]+)*)\.([a-z]+)(?:-ext)?@domain\.com"
+    End With
     
-    ' Execute regex
-    Set matches = regex.Execute(cellValue)
+    Set matches = regex.Execute(text)
     
-    ' Store matches in an array
-    If matches.Count > 0 Then
-        ReDim result(matches.Count - 1)
-        For i = 0 To matches.Count - 1
-            result(i) = matches(i).Value
-        Next i
-        ExtractEmails = result
-    Else
-        ExtractEmails = Array() ' Return an empty array if no match
-    End If
-End Function 
+    For Each match In matches
+        emailCollection.Add match.Value
+    Next match
+    
+    Set ExtractEmails = emailCollection
+End Function
+
+Sub RemoveDuplicatesWithinAndAcrossColumnsSameRow()
+    Dim ws As Worksheet
+    Dim lastRow As Long
+    Dim i As Long, j As Long
+    Dim emailDict As Object
+    Dim email As Variant
+    Dim cellContent As String
+    Dim emailCollection As Collection
+    
+    Set ws = ThisWorkbook.Sheets("Sheet1") ' Change "Sheet1" to your sheet name
+    lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+    
+    For i = 1 To lastRow
+        Set emailDict = CreateObject("Scripting.Dictionary")
+        
+        ' First pass: Remove duplicates within each cell
+        For j = 1 To 3 ' Columns A, B, and C
+            cellContent = ws.Cells(i, j).Value
+            If Len(Trim(cellContent)) > 0 Then
+                Set emailCollection = ExtractEmails(cellContent)
+                
+                ws.Cells(i, j).ClearContents
+                For Each email In emailCollection
+                    If Not emailDict.exists(email) Then
+                        If ws.Cells(i, j).Value = "" Then
+                            ws.Cells(i, j).Value = email
+                        Else
+                            ws.Cells(i, j).Value = ws.Cells(i, j).Value & "; " & email
+                        End If
+                        emailDict(email) = True
+                    End If
+                Next email
+            End If
+        Next j
+        
+        ' Second pass: Remove duplicates across columns
+        Set emailDict = CreateObject("Scripting.Dictionary")
+        For j = 1 To 3
+            cellContent = ws.Cells(i, j).Value
+            If Len(Trim(cellContent)) > 0 Then
+                Set emailCollection = ExtractEmails(cellContent)
+                
+                ws.Cells(i, j).ClearContents
+                For Each email In emailCollection
+                    If Not emailDict.exists(email) Then
+                        If ws.Cells(i, j).Value = "" Then
+                            ws.Cells(i, j).Value = email
+                        Else
+                            ws.Cells(i, j).Value = ws.Cells(i, j).Value & "; " & email
+                        End If
+                        emailDict(email) = True
+                    End If
+                Next email
+            End If
+        Next j
+    Next i
+    
+    MsgBox "Duplicates have been removed within and across columns for each row.", vbInformation
+End Sub
