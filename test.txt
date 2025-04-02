@@ -627,3 +627,36 @@ Sub RemoveDuplicatesWithinAndAcrossColumnsSameRow()
 
     MsgBox "Duplicates have been removed within and across columns for each row.", vbInformation
 End Sub
+
+
+
+#####_#_#-=#=#=#==#=#
+Function ExtractEmails(cellValue As String) As Variant
+    Dim regex As Object
+    Dim matches As Object
+    Dim match As Object
+    Dim result() As String
+    Dim i As Integer
+    
+    ' Create RegExp object
+    Set regex = CreateObject("VBScript.RegExp")
+    
+    ' Define regex pattern (adjusted for VBA compatibility)
+    regex.Pattern = "([a-z]+(?:-[a-z]+)*)\.([a-z]+)(-ext)?@([a-z]+\.[a-z]+)"
+    regex.Global = True
+    regex.IgnoreCase = True
+    
+    ' Execute regex
+    Set matches = regex.Execute(cellValue)
+    
+    ' Store matches in an array
+    If matches.Count > 0 Then
+        ReDim result(matches.Count - 1)
+        For i = 0 To matches.Count - 1
+            result(i) = matches(i).Value
+        Next i
+        ExtractEmails = result
+    Else
+        ExtractEmails = Array() ' Return an empty array if no match
+    End If
+End Function 
