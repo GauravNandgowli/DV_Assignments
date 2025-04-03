@@ -717,3 +717,99 @@ Sub RemoveDuplicatesWithinAndAcrossColumnsSameRow()
 End Sub
 
 ([a-z]+(?:-[a-z]+)*)\.([a-z-]+)(?:-ext)?@([a-z]+(?:\.[a-z]+)+)
+
+-------------------------------------------------------
+mul spaces
+------------------------------------------------------
+Sub RemoveDuplicateEmails()
+    Dim ws As Worksheet
+    Dim lastRow As Long, i As Long, col As Variant
+    Dim targetCols As Variant
+    Dim emailDict As Object
+    Dim cellValue As String, emails As Variant
+    Dim uniqueEmails As Object
+    Dim email As Variant
+    
+    ' Set worksheet
+    Set ws = ActiveSheet
+    
+    ' Define the columns to clean (change as needed)
+    targetCols = Array(5, 6, 7) ' Columns E, F, G
+    
+    ' Find last row with data (using column 5 for instance)
+    lastRow = ws.Cells(ws.Rows.Count, targetCols(0)).End(xlUp).Row
+    
+    ' Loop through each row starting from row 2
+    For i = 2 To lastRow
+        ' Dictionary to track unique emails across the row
+        Set emailDict = CreateObject("Scripting.Dictionary")
+        
+        ' First pass: Remove duplicates within each cell
+        For Each col In targetCols
+            cellValue = ws.Cells(i, col).Value
+            If cellValue <> "" Then
+                ' Replace commas and spaces with semicolon
+                cellValue = Replace(cellValue, ",", ";")
+                cellValue = Replace(cellValue, " ", ";")
+                
+                ' Remove any multiple semicolons by looping until no double semicolon exists
+                Do While InStr(cellValue, ";;") > 0
+                    cellValue = Replace(cellValue, ";;", ";")
+                Loop
+                
+                ' Remove any leading or trailing semicolons
+                If Left(cellValue, 1) = ";" Then cellValue = Mid(cellValue, 2)
+                If Right(cellValue, 1) = ";" Then cellValue = Left(cellValue, Len(cellValue) - 1)
+                
+                ' Now split the cleaned string using semicolon as delimiter
+                emails = Split(cellValue, ";")
+                
+                ' Dictionary to track unique emails within a cell
+                Set uniqueEmails = CreateObject("Scripting.Dictionary")
+                
+                ' Add unique emails within the cell
+                For Each email In emails
+                    email = Trim(email)
+                    If email <> "" Then uniqueEmails(email) = 1
+                Next email
+                
+                ' Rebuild the cell content
+                ws.Cells(i, col).Value = Join(uniqueEmails.keys, "; ")
+            End If
+        Next col
+        
+        ' Second pass: Remove duplicates across the row
+        ' The emails in the first cell of the row (column 5) are kept,
+        ' and if any duplicates are found in later columns (6 and 7), they are removed.
+        For Each col In targetCols
+            cellValue = ws.Cells(i, col).Value
+            If cellValue <> "" Then
+                emails = Split(cellValue, "; ")
+                Dim finalEmails As Collection
+                Set finalEmails = New Collection
+                
+                ' Filter emails that haven't appeared before in this row
+                For Each email In emails
+                    If Not emailDict.exists(email) Then
+                        emailDict.Add email, 1
+                        finalEmails.Add email
+                    End If
+                Next email
+                
+                ' Rebuild the cell content based on filtered emails
+                If finalEmails.Count > 0 Then
+                    Dim emailStr As String
+                    emailStr = ""
+                    For Each email In finalEmails
+                        emailStr = emailStr & email & "; "
+                    Next email
+                    ws.Cells(i, col).Value = Left(emailStr, Len(emailStr) - 2) ' Remove last "; "
+                Else
+                    ws.Cells(i, col).Value = "" ' Empty cell if all were duplicates
+                End If
+            End If
+        Next col
+    Next i
+    
+    MsgBox "Duplicates removed successfully!", vbInformation
+End Sub
