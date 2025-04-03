@@ -922,3 +922,118 @@ Function CleanEmailString(ByVal inputStr As String) As String
     
     CleanEmailString = temp
 End Function
+---------------------------------------
+----------------------
+Sub RemoveDuplicateEmails()
+    Dim ws As Worksheet
+    Dim lastRow As Long, i As Long, j As Long
+    Dim targetCols As Variant
+    Dim emailDict As Object
+    Dim cellValue As String, cleanedStr As String
+    Dim emails As Variant
+    Dim tempDict As Object
+    Dim finalStr As String
+    
+    ' Set worksheet (use ActiveSheet or assign a specific sheet)
+    Set ws = ActiveSheet
+    
+    ' Define the columns to clean (columns E, F, G)
+    targetCols = Array(5, 6, 7)
+    
+    ' Find last row with data using the first target column
+    lastRow = ws.Cells(ws.Rows.Count, targetCols(0)).End(xlUp).Row
+    
+    ' Loop through each row starting from row 2 (adjust if your data starts on a different row)
+    For i = 2 To lastRow
+        ' First: Clean each cell and remove duplicate emails within the cell
+        For j = LBound(targetCols) To UBound(targetCols)
+            cellValue = ws.Cells(i, targetCols(j)).Value
+            If Trim(cellValue) <> "" Then
+                ' Clean the cell string to standardize delimiters
+                cleanedStr = CleanEmailString(cellValue)
+                ' Split on semicolon delimiter
+                emails = Split(cleanedStr, ";")
+                
+                ' Use a dictionary to store unique emails from the cell
+                Set tempDict = CreateObject("Scripting.Dictionary")
+                Dim emailItem As Variant
+                For Each emailItem In emails
+                    emailItem = Trim(emailItem)
+                    If emailItem <> "" Then
+                        If Not tempDict.Exists(LCase(emailItem)) Then
+                            tempDict.Add LCase(emailItem), emailItem
+                        End If
+                    End If
+                Next emailItem
+                ' Rebuild the cell content with a uniform "; " delimiter
+                ws.Cells(i, targetCols(j)).Value = Join(tempDict.Items, "; ")
+            End If
+        Next j
+        
+        ' Second: Remove duplicate emails across the columns in the same row.
+        ' We'll keep a dictionary to track emails we've already seen.
+        Set emailDict = CreateObject("Scripting.Dictionary")
+        
+        For j = LBound(targetCols) To UBound(targetCols)
+            cellValue = ws.Cells(i, targetCols(j)).Value
+            If Trim(cellValue) <> "" Then
+                emails = Split(cellValue, ";")
+                Dim uniqueEmails As Collection
+                Set uniqueEmails = New Collection
+                Dim k As Long
+                For k = LBound(emails) To UBound(emails)
+                    Dim currentEmail As String
+                    currentEmail = Trim(emails(k))
+                    If currentEmail <> "" Then
+                        ' Check across row: if email not already added, then add it now.
+                        If Not emailDict.Exists(LCase(currentEmail)) Then
+                            emailDict.Add LCase(currentEmail), currentEmail
+                            uniqueEmails.Add currentEmail
+                        End If
+                    End If
+                Next k
+                
+                ' Rebuild cell: if there are any emails left for this column, join them; otherwise clear the cell.
+                If uniqueEmails.Count > 0 Then
+                    finalStr = ""
+                    Dim item As Variant
+                    For Each item In uniqueEmails
+                        finalStr = finalStr & item & "; "
+                    Next item
+                    ' Remove trailing "; "
+                    ws.Cells(i, targetCols(j)).Value = Left(finalStr, Len(finalStr) - 2)
+                Else
+                    ws.Cells(i, targetCols(j)).Value = ""
+                End If
+            End If
+        Next j
+    Next i
+    
+    MsgBox "Duplicates removed successfully!", vbInformation
+End Sub
+
+' This function cleans the input string by:
+' - Replacing commas and spaces with semicolons
+' - Collapsing multiple semicolons into one
+' - Removing any leading or trailing semicolons/spaces
+Function CleanEmailString(ByVal inputStr As String) As String
+    Dim temp As String
+    temp = inputStr
+    
+    ' Replace commas with semicolon
+    temp = Replace(temp, ",", ";")
+    ' Replace spaces with semicolon (if spaces separate emails)
+    temp = Replace(temp, " ", ";")
+    
+    ' Collapse multiple semicolons into one
+    Do While InStr(temp, ";;") > 0
+        temp = Replace(temp, ";;", ";")
+    Loop
+    
+    ' Trim leading and trailing spaces and semicolons
+    temp = Trim(temp)
+    If Left(temp, 1) = ";" Then temp = Mid(temp, 2)
+    If Right(temp, 1) = ";" Then temp = Left(temp, Len(temp) - 1)
+    
+    CleanEmailString = Trim(temp)
+End Function
