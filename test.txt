@@ -1037,3 +1037,58 @@ Function CleanEmailString(ByVal inputStr As String) As String
     
     CleanEmailString = Trim(temp)
 End Function
+-----------------------------------------
+-----------------------------------------
+Function CleanEmailString(ByVal inputStr As String) As String
+    Dim temp As String
+    Dim emailArray As Variant
+    Dim emailDict As Object
+    Dim result As String
+    Dim email As Variant
+
+    ' Replace carriage returns, line feeds, and commas with semicolons
+    temp = Replace(inputStr, vbCrLf, ";")
+    temp = Replace(temp, vbCr, ";")
+    temp = Replace(temp, vbLf, ";")
+    temp = Replace(temp, ",", ";")
+
+    ' Remove extra spaces
+    temp = Trim(temp)
+    
+    ' Replace multiple spaces with a single space
+    Dim regex As Object
+    Set regex = CreateObject("VBScript.RegExp")
+    regex.Pattern = "\s+"
+    regex.Global = True
+    temp = regex.Replace(temp, " ")
+
+    ' Replace spaces between emails with semicolons
+    temp = Replace(temp, " ;", ";") ' Remove spaces before semicolons
+    temp = Replace(temp, "; ", ";") ' Remove spaces after semicolons
+    temp = Replace(temp, " ", ";")  ' Convert remaining spaces to semicolons
+
+    ' Collapse multiple semicolons into one
+    Do While InStr(temp, ";;") > 0
+        temp = Replace(temp, ";;", ";")
+    Loop
+
+    ' Split the cleaned string into an array
+    emailArray = Split(temp, ";")
+
+    ' Use a dictionary to store unique emails (ignoring spaces)
+    Set emailDict = CreateObject("Scripting.Dictionary")
+
+    For Each email In emailArray
+        email = Trim(email) ' Trim each email to remove leading/trailing spaces
+        If email <> "" Then
+            If Not emailDict.Exists(LCase(email)) Then
+                emailDict.Add LCase(email), email
+            End If
+        End If
+    Next email
+
+    ' Join the unique emails back into a single string
+    result = Join(emailDict.Items, "; ")
+
+    CleanEmailString = result
+End Function
