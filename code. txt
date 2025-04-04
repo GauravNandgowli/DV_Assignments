@@ -1,0 +1,40 @@
+Sub CreateMultipleTeamsMeetings()
+    Dim olApp As Outlook.Application
+    Dim olNS As Outlook.NameSpace
+    Dim olAppointment As Outlook.AppointmentItem
+    Dim i As Integer
+    Dim arrStartTimes As Variant
+    
+    Set olApp = New Outlook.Application
+    Set olNS = olApp.GetNamespace("MAPI")
+    
+    ' Define an array of start times (as strings in "HH:MM:SS" format)
+    arrStartTimes = Array("09:00:00", "10:00:00", "11:00:00", "12:00:00", _
+                          "13:00:00", "14:00:00", "15:00:00", "16:00:00", _
+                          "17:00:00", "18:00:00")
+    
+    For i = LBound(arrStartTimes) To UBound(arrStartTimes)
+        Set olAppointment = olApp.CreateItem(olAppointmentItem)
+        With olAppointment
+            .Subject = "Teams Meeting " & (i + 1)
+            .Location = "Microsoft Teams Meeting" ' You can insert a persistent join link here.
+            ' Set the meeting to today with the specific start time
+            .Start = Date + TimeValue(arrStartTimes(i))
+            .Duration = 30  ' Duration in minutes
+            .MeetingStatus = olMeeting
+            ' Customize the body with the join link (if you have a persistent join link from a "master meeting")
+            .Body = "Join Teams Meeting: [Insert persistent Teams meeting link here]" & vbCrLf & _
+                    "Participants: [List participants for meeting " & (i + 1) & "]"
+            
+            ' Add required recipients (different for each meeting if needed)
+            ' .Recipients.Add "participant1@example.com"
+            ' .Recipients.Add "participant2@example.com"
+            ' You can customize this list per meeting if you have an array of participant lists.
+            
+            .Save
+            .Send  ' Uncomment this if you want to send invitations immediately
+        End With
+    Next i
+    
+    MsgBox "Multiple Teams meetings created."
+End Sub
