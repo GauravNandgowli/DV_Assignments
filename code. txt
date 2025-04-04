@@ -85,4 +85,18 @@ Sub CreateRecurringTeamsMeetingSeries()
     End With
     
     MsgBox "Recurring Teams meeting series created."
-End Sub 
+End Sub
+
+
+#######
+.Body = "Agenda: Project Updates" & vbCrLf & vbCrLf & _
+        "----------------------------------------" & vbCrLf & _
+        "Microsoft Teams meeting" & vbCrLf & _
+        "Join on your computer or mobile app" & vbCrLf & _
+        "Click here to join the meeting" & vbCrLf & _
+        "https://teams.microsoft.com/l/meetup-join/AAA...zzz" & vbCrLf & _
+        "Meeting ID: 123 456 789# Passcode: abc123" & vbCrLf & _
+        "Dial in: +1 555-123-4567" & vbCrLf & _
+        "Find a local number | Reset PIN | Learn more" & vbCrLf & _
+        "Meeting options" & vbCrLf & _
+        "----------------------------------------" 
