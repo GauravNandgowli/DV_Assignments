@@ -38,3 +38,11 @@ Sub CreateMultipleTeamsMeetings()
     
     MsgBox "Multiple Teams meetings created."
 End Sub
+
+
+BodyFormat = olFormatHTML
+            .HTMLBody = "<html><body>" & _
+                        "<p><strong>Join Teams Meeting:</strong> " & _
+                        "<a href='" & persistentLink & "' target='_blank'>Click here to join</a></p>" & _
+                        "<p>Participants: [List participants for meeting " & (i + 1) & "]</p>" & _
+                        "</body></html>"
