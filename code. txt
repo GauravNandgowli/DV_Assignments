@@ -46,3 +46,43 @@ BodyFormat = olFormatHTML
                         "<a href='" & persistentLink & "' target='_blank'>Click here to join</a></p>" & _
                         "<p>Participants: [List participants for meeting " & (i + 1) & "]</p>" & _
                         "</body></html>"
+😭😭😭😭😭😭
+Sub CreateRecurringTeamsMeetingSeries()
+    Dim olApp As Outlook.Application
+    Dim olNS As Outlook.NameSpace
+    Dim olAppointment As Outlook.AppointmentItem
+    Dim oRecPattern As Outlook.RecurrencePattern
+    
+    Set olApp = New Outlook.Application
+    Set olNS = olApp.GetNamespace("MAPI")
+    
+    ' Create a new meeting appointment
+    Set olAppointment = olApp.CreateItem(olAppointmentItem)
+    
+    With olAppointment
+        .Subject = "Recurring Teams Meeting"
+        .Location = "Microsoft Teams Meeting" ' You might want to include the Teams join link here if you have it.
+        .Start = Date + TimeValue("09:00:00")  ' Starting time of the first occurrence (today at 9:00 AM)
+        .Duration = 30   ' Duration in minutes
+        .MeetingStatus = olMeeting
+        ' Add Teams meeting details (if using Outlook integration)
+        .Body = "Please join via Teams. [Insert Teams meeting join link here]"
+        
+        ' Set the recurrence pattern
+        Set oRecPattern = .GetRecurrencePattern
+        With oRecPattern
+            .RecurrenceType = olRecursDaily
+            .Interval = 1 ' Every day; since we want all occurrences on the same day, we use the same date.
+            .PatternStartDate = Date
+            ' For a recurring meeting on a single day, you can simulate by creating multiple individual appointments 
+            ' OR create a series and then modify each occurrence manually via VBA.
+            ' Here we'll create a series with 10 occurrences:
+            .Occurrences = 10
+        End With
+        
+        .Save
+        .Send  ' If you want to send meeting invites automatically.
+    End With
+    
+    MsgBox "Recurring Teams meeting series created."
+End Sub 
