@@ -1,83 +1,26 @@
+from selenium import webdriver
+from selenium.webdriver.edge.service import Service
+from selenium.webdriver.edge.options import Options
+import pyautogui
+import time
 
+options = Options()
+# DO NOT run headless
+options.add_argument("--start-maximized")
 
+service = Service("C:\\Users\\gnandgow@12725\\bin\\edgedriver-136.0.3240.50\\msedgedriver.exe")
+driver = webdriver.Edge(service=service, options=options)
 
-Sub CreateMeetingRequest()
-    Dim outlookApp As Object
-    Dim meetingItem As Object
-    Dim recipient As Object
-    
-    ' Create a new instance of Outlook
-    Set outlookApp = CreateObject("Outlook.Application")
-    
-    ' Create a new meeting request
-    Set meetingItem = outlookApp.CreateItem(1) ' 1 corresponds to olAppointmentItem
-    
-    ' Set the properties of the meeting
-    With meetingItem
-        .Subject = "Team Meeting"
-        .Location = "Conference Room A"
-        .Start = #10/25/2023 10:00:00 AM# ' Set the start date and time
-        .End = #10/25/2023 11:00:00 AM# ' Set the end date and time
-        .Body = "Please attend the team meeting to discuss project updates."
-        
-        ' Add a recipient
-        Set recipient = .Recipients.Add("recipient@example.com")
-        recipient.Type = 1 ' 1 corresponds to olRequired
-        
-        ' Send the meeting request
-        .Send
-    End With
+driver.get("https://your-angular-site.com")
+time.sleep(10)  # Wait for full render
 
+# Simulate Ctrl+S
+pyautogui.hotkey('ctrl', 's')
+time.sleep(2)
 
+# Enter file name and hit Enter
+pyautogui.typewrite('saved_page')
+pyautogui.press('enter')
 
-Sub CreateMeeting()
-    Dim outlookApp As Object
-    Dim meetingItem As Object
-    
-    ' Create Outlook Application
-    On Error Resume Next
-    Set outlookApp = CreateObject("Outlook.Application")
-    If outlookApp Is Nothing Then
-        MsgBox "Outlook is not installed or not running.", vbCritical
-        Exit Sub
-    End If
-    On Error GoTo 0
-    MsgBox "Outlook application created."
-    
-    ' Create a Meeting Item
-    On Error Resume Next
-    Set meetingItem = outlookApp.CreateItem(1) ' 1 is the constant value for olMeetingRequest
-    If meetingItem Is Nothing Then
-        MsgBox "Failed to create meeting item.", vbCritical
-        Exit Sub
-    End If
-    On Error GoTo 0
-    MsgBox "Meeting item created."
-
-    ' Set Meeting Details
-    meetingItem.Subject = "Team Meeting"
-    meetingItem.Location = "Conference Room"
-    meetingItem.Start = Now + TimeValue("10:00 AM")
-    meetingItem.Duration = 60
-
-    ' Add Attendees
-    meetingItem.Recipients.Add "john.doe@company.com"
-    meetingItem.Recipients.Add "jane.smith@company.com"
-
-    ' Display the meeting invite
-    meetingItem.Display
-    MsgBox "Meeting invite displayed."
-End Sub
-
-
-
-
-
-    
-    ' Clean up
-    Set recipient = Nothing
-    Set meetingItem = Nothing
-    Set outlookApp = Nothing
-End Sub 
-
-End sub
+time.sleep(3)
+driver.quit()
