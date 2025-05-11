@@ -1,26 +1,24 @@
-from selenium import webdriver
-from selenium.webdriver.edge.service import Service
-from selenium.webdriver.edge.options import Options
-import pyautogui
-import time
+Sub ExtractMeetingID()
+    Dim text As String
+    Dim regEx As Object
+    Dim match As Object
+    Dim matches As Object
+    
+    ' Example: replace with your actual text input
+    text = "Microsoft Teams Need help? <https://aka.ms/...> Meeting ID: 320 172 079 989 5 Passcode: 5FY9P5ZB"
 
-options = Options()
-# DO NOT run headless
-options.add_argument("--start-maximized")
+    ' Create RegExp object
+    Set regEx = CreateObject("VBScript.RegExp")
+    regEx.Pattern = "Meeting ID:\s*([\d\s]+)"
+    regEx.IgnoreCase = True
+    regEx.Global = False
 
-service = Service("C:\\Users\\gnandgow@12725\\bin\\edgedriver-136.0.3240.50\\msedgedriver.exe")
-driver = webdriver.Edge(service=service, options=options)
-
-driver.get("https://your-angular-site.com")
-time.sleep(10)  # Wait for full render
-
-# Simulate Ctrl+S
-pyautogui.hotkey('ctrl', 's')
-time.sleep(2)
-
-# Enter file name and hit Enter
-pyautogui.typewrite('saved_page')
-pyautogui.press('enter')
-
-time.sleep(3)
-driver.quit()
+    ' Execute the regex
+    If regEx.test(text) Then
+        Set matches = regEx.Execute(text)
+        Set match = matches(0)
+        MsgBox "Meeting ID is: " & Trim(match.SubMatches(0))
+    Else
+        MsgBox "Meeting ID not found."
+    End If
+End Sub
