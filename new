@@ -22,3 +22,17 @@ Sub ExtractMeetingID()
         MsgBox "Meeting ID not found."
     End If
 End Sub
+
+End-to-End AWS GenAI Blog Post Generator 14 Nov, 2024  -  06 Dec, 2024
+Key Skills: aws aws bedrock aws lambda serverless Llama 3.1 70B aws s3
+Implemented a serverless architecture on AWS, utilizing Llama 3.1 70B Instruct to generate comprehensive and contextually relevant
+blog posts based on user prompts. Leveraged AWS Lambda for efficient function execution, Amazon API Gateway for API exposure,
+and Amazon S3 for storing generated content .
+Recursive Descent Parser 25 May, 2024  -  30 Jun, 2024
+Key Skills: compiler deign automata theory Core Java Parsing Git Recursive descent parser
+Implemented a recursive descent parser allowing efficient syntax analysis and error detection. Designed and developed parsing
+algorithm to deal with complex grammar rules in order to interpret code correctly and reliably.
+Firelink
+Key Skills: ReactJS node js express js MongoDB
+Firelink is a MERN stack-based e-commerce application that aims to ease purchasing goods online. It offers a user-friendly platform for
+buying essentials.
