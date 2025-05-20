@@ -1,0 +1,26 @@
+Sub RunPythonScript()
+    Dim pyE As String, pyS As String, batFile As String
+    Dim fso As Object, f As Object
+    Dim wsh As Object
+
+    ' Define paths
+    pyE = "C:\Users\gnandgow012725\bin\python-3.13.3\inst\python.exe"
+    pyS = "C:\Users\gnandgow012725\Downloads\MeetingAutoPY\hello.py"
+    batFile = Environ("TEMP") & "\run_python.bat"
+
+    ' Create .bat file
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    Set f = fso.CreateTextFile(batFile, True)
+    f.WriteLine """" & pyE & """ """ & pyS & """"
+    f.WriteLine "pause"
+    f.Close
+
+    ' Create shell object
+    Set wsh = CreateObject("WScript.Shell")
+    wsh.Run """" & batFile & """", 1, False
+
+    ' Clean up
+    Set fso = Nothing
+    Set f = Nothing
+    Set wsh = Nothing
+End Sub
