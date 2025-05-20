@@ -1,71 +1,18 @@
-import win32com.client import datetime import time import re
+Sub RunPythonScript()
+    Dim pyE As String, pyS As String, comm As String
+    Dim shell As Object
 
-def clean_id(meeting_body): pattern = r"Meeting ID:\s*([\d\s]+)" regex = re.compile(pattern, re.IGNORECASE) match = regex.search(meeting_body) if match: return match.group(1).strip().replace('\r\n', '').replace('\n', '') return ""
+    ' Full paths
+    pyE = "C:\Users\gnandgow012725\bin\python-3.13.3\inst\python.exe"
+    pyS = "C:\Users\gnandgow012725\Downloads\MeetingAutoPY\hello.py"
 
-def pro_meetings(trimmed_id, new_date, processed_old_subject, new_subject, start_time, end_time): try: outlook = win32com.client.Dispatch("Outlook.Application") namespace = outlook.GetNamespace("MAPI") calendar = namespace.GetDefaultFolder(9)  # olFolderCalendar items = calendar.Items items.IncludeRecurrences = True items.Sort("[Start]")
+    ' Build command: cmd /k ""<exe>" "<script>""
+    comm = "cmd /k """"" & pyE & """ """ & pyS & """"""
 
-found = False
+    ' Show command for debugging
+    MsgBox comm
 
-    for meeting in items:
-        try:
-            if meeting.Class != 26:  # Ensure it's an appointment item
-                continue
-
-            processed_meeting_subject = meeting.Subject.strip().lower().replace(" ", "")
-            if processed_meeting_subject == processed_old_subject:
-                if clean_id(meeting.Body) == trimmed_id:
-                    meeting.Start = start_time
-                    meeting.End = end_time
-                    meeting.Subject = new_subject
-                    meeting.MeetingStatus = 1  # olMeeting
-                    meeting.Save()
-                    meeting.Send()
-                    found = True
-                    break
-        except Exception as e:
-            print(f"Error processing meeting: {e}")
-            continue
-
-    return found
-except Exception as e:
-    print(f"Error in pro_meetings: {e}")
-    return False
-
-def reschedule_meetings_from_excel(workbook_path, sheet_name): import pandas as pd df = pd.read_excel(workbook_path, sheet_name=sheet_name, header=None, skiprows=1)
-
-for index, row in df.iterrows():
-    if row.isna().all():
-        continue
-    try:
-        meeting_date = pd.to_datetime(row[0]).date()
-        old_subject = str(row[1]) if pd.notna(row[1]) else "Meeting"
-        new_subject = str(row[2]) if pd.notna(row[2]) else "Meeting"
-        old_date = pd.to_datetime(row[3]).date()
-        new_date = pd.to_datetime(row[4]).date()
-        old_start_time = pd.to_datetime(str(row[5])).time()
-        new_start_time = pd.to_datetime(str(row[6])).time()
-        new_end_time = pd.to_datetime(str(row[7])).time()
-        meeting_id = str(row[8]).strip().replace('\r\n', '').replace('\n', '') if pd.notna(row[8]) else ""
-
-        processed_old_subject = old_subject.strip().lower().replace(" ", "")
-        processed_new_subject = new_subject.strip().lower().replace(" ", "")
-
-        full_start_time = datetime.datetime.combine(new_date, new_start_time)
-        full_end_time = datetime.datetime.combine(new_date, new_end_time)
-
-        if (old_subject != new_subject or old_date != new_date or
-            old_start_time != new_start_time or row[7] != row[6]):
-            pro_meetings(meeting_id, new_date, processed_old_subject,
-                         new_subject, full_start_time, full_end_time)
-
-        time.sleep(2)
-    except Exception as e:
-        print(f"Error processing row {index + 2}: {e}")
-        continue
-
-print("Meeting rescheduling process completed.")
-
-Example usage:
-
-reschedule_meetings_from_excel("C:/path/to/workbook.xlsx", "Reschedule Meetings")
-
+    ' Run command
+    Set shell = CreateObject("WScript.Shell")
+    shell.Run comm, 1, False
+End Sub
